@@ -44,6 +44,10 @@ class TaskRepositoryImpl @Inject constructor(
         taskDao.deleteTaskById(id)
     }
 
+    override suspend fun deleteTasksByNoteId(noteId: Long) {
+        taskDao.deleteTasksByNoteId(noteId)
+    }
+
     override suspend fun toggleTaskCompletion(id: Long) {
         val task = taskDao.getTaskById(id)
         task?.let {
