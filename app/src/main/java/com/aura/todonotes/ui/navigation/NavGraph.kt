@@ -31,31 +31,31 @@ fun AuraNavHost(
         enterTransition = {
             slideIntoContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                animationSpec = tween(300)
-            ) + fadeIn(animationSpec = tween(300))
+                animationSpec = tween(350)
+            ) + fadeIn(animationSpec = tween(350))
         },
         exitTransition = {
             slideOutOfContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                animationSpec = tween(300)
-            ) + fadeOut(animationSpec = tween(300))
+                animationSpec = tween(350)
+            ) + fadeOut(animationSpec = tween(350))
         },
         popEnterTransition = {
             slideIntoContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                animationSpec = tween(300)
-            ) + fadeIn(animationSpec = tween(300))
+                animationSpec = tween(350)
+            ) + fadeIn(animationSpec = tween(350))
         },
         popExitTransition = {
             slideOutOfContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                animationSpec = tween(300)
-            ) + fadeOut(animationSpec = tween(300))
+                animationSpec = tween(350)
+            ) + fadeOut(animationSpec = tween(350))
         }
     ) {
         composable(Screen.Home.route) {
             HomeScreen(
-                onNavigateToAddEdit = { navController.navigate(Screen.AddEdit.route) },
+                onNavigateToAddEdit = { navController.navigate(Screen.AddEdit.createRoute()) },
                 onNavigateToDetail = { noteId -> navController.navigate(Screen.Detail.createRoute(noteId)) },
                 onNavigateToSearch = { navController.navigate(Screen.Search.route) },
                 onNavigateToTrash = { navController.navigate(Screen.Trash.route) },
@@ -64,8 +64,18 @@ fun AuraNavHost(
             )
         }
 
-        composable(Screen.AddEdit.route) {
+        composable(
+            route = Screen.AddEdit.route,
+            arguments = listOf(
+                navArgument("noteId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getLong("noteId") ?: -1L
             AddEditScreen(
+                noteId = if (noteId == -1L) null else noteId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -80,7 +90,7 @@ fun AuraNavHost(
             DetailScreen(
                 noteId = noteId,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToEdit = { navController.navigate(Screen.AddEdit.route) },
+                onNavigateToEdit = { navController.navigate(Screen.AddEdit.createRoute(noteId)) },
                 onNavigateToLocked = { navController.navigate(Screen.Locked.createRoute(noteId)) }
             )
         }
