@@ -1,7 +1,7 @@
 [versions]
 agp = "9.2.1"
 kotlin = "2.3.21"
-ksp = "2.3.21-2.0.2"
+ksp = "2.3.7"
 
 # AndroidX
 androidx-core = "1.15.0"
@@ -16,13 +16,11 @@ compose-bom = "2026.05.00"
 hilt = "2.59.2"
 hilt-navigation-compose = "1.2.1"
 
-
 # Room
 room = "2.6.1"
 
 # Coroutines
 coroutines = "1.10.1"
-
 
 # DataStore
 datastore = "1.1.1"
@@ -61,10 +59,8 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 # Coroutines
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
-
 # DataStore
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
-
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
