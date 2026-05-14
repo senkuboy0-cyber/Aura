@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.PushPinOutlined
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -85,7 +84,6 @@ fun AddEditScreen(
     val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
     val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
 
-    // Animations outside TopAppBar actions
     val pinScale by animateFloatAsState(
         targetValue = if (uiState.isPinned) 1.2f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
@@ -124,17 +122,15 @@ fun AddEditScreen(
                     }
                 },
                 actions = {
-                    // Pin button
                     IconButton(onClick = { viewModel.togglePin() }) {
                         Icon(
-                            imageVector = if (uiState.isPinned) Icons.Default.PushPin else Icons.Default.PushPinOutlined,
+                            imageVector = Icons.Default.PushPin,
                             contentDescription = "Pin",
                             tint = if (uiState.isPinned) MaterialTheme.colorScheme.primary else textColor,
                             modifier = Modifier.scale(pinScale)
                         )
                     }
 
-                    // Lock button
                     IconButton(onClick = { viewModel.toggleLock() }) {
                         Icon(
                             imageVector = if (uiState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
@@ -178,7 +174,6 @@ fun AddEditScreen(
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            // Title
             item {
                 BasicTextField(
                     value = uiState.title,
@@ -203,7 +198,6 @@ fun AddEditScreen(
                 )
             }
 
-            // Content
             item {
                 BasicTextField(
                     value = uiState.content,
@@ -229,7 +223,6 @@ fun AddEditScreen(
                 )
             }
 
-            // Tasks Section
             if (uiState.tasks.isNotEmpty()) {
                 item {
                     Row(
@@ -280,7 +273,6 @@ fun AddEditScreen(
                 }
             }
 
-            // Add Task Input
             item {
                 Row(
                     modifier = Modifier
@@ -336,7 +328,6 @@ fun AddEditScreen(
                 }
             }
 
-            // Color Picker
             item {
                 ColorPickerRow(
                     selectedColor = uiState.colorHex,
