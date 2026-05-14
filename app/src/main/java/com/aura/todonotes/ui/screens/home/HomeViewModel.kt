@@ -45,7 +45,7 @@ class HomeViewModel @Inject constructor(
                 noteRepository.getAllNotes(),
                 noteRepository.getNotesCount(),
                 settingsRepository.getSettings()
-            ) { notes, count, settings ->
+            ) { notes: List<Note>, count: Int, settings ->
                 val sortedNotes = sortNotes(notes, settings.defaultSort, settings.showPinnedFirst)
                 HomeUiState(
                     notes = sortedNotes,
