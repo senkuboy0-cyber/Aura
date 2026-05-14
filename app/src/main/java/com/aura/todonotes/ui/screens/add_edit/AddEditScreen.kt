@@ -5,7 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,11 +24,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.PushPinOutlined
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -42,17 +39,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -102,7 +96,7 @@ fun AddEditScreen(
                     IconButton(onClick = { viewModel.togglePin() }) {
                         Icon(
                             imageVector = if (uiState.isPinned) Icons.Default.PushPin
-                                         else Icons.Default.PushPinOutlined,
+                                         else Icons.Default.PushPin,
                             contentDescription = "Pin",
                             tint = if (isColorDark(backgroundColor)) Color.White
                                    else MaterialTheme.colorScheme.onSurface
@@ -118,7 +112,7 @@ fun AddEditScreen(
                         )
                     }
                 },
-                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = backgroundColor
                 )
             )
@@ -149,22 +143,24 @@ fun AddEditScreen(
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title
             item {
                 OutlinedTextField(
                     value = uiState.title,
                     onValueChange = { viewModel.updateTitle(it) },
                     placeholder = {
-                        Text("Title", color = if (isColorDark(backgroundColor))
-                            Color.White.copy(alpha = 0.6f)
-                        else Color.Black.copy(alpha = 0.4f))
+                        Text(
+                            text = "Title",
+                            color = if (isColorDark(backgroundColor))
+                                Color.White.copy(alpha = 0.6f)
+                            else Color.Black.copy(alpha = 0.4f)
+                        )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
                     ),
                     textStyle = MaterialTheme.typography.titleLarge.copy(
                         color = if (isColorDark(backgroundColor)) Color.White
@@ -174,15 +170,17 @@ fun AddEditScreen(
                 )
             }
 
-            // Content
             item {
                 OutlinedTextField(
                     value = uiState.content,
                     onValueChange = { viewModel.updateContent(it) },
                     placeholder = {
-                        Text("Write your note...", color = if (isColorDark(backgroundColor))
-                            Color.White.copy(alpha = 0.6f)
-                        else Color.Black.copy(alpha = 0.4f))
+                        Text(
+                            text = "Write your note...",
+                            color = if (isColorDark(backgroundColor))
+                                Color.White.copy(alpha = 0.6f)
+                            else Color.Black.copy(alpha = 0.4f)
+                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -190,8 +188,8 @@ fun AddEditScreen(
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
                     ),
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
                         color = if (isColorDark(backgroundColor)) Color.White
@@ -200,7 +198,6 @@ fun AddEditScreen(
                 )
             }
 
-            // Tasks Section
             if (uiState.tasks.isNotEmpty()) {
                 item {
                     Text(
@@ -223,7 +220,6 @@ fun AddEditScreen(
                 }
             }
 
-            // Add Task Input
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -233,9 +229,12 @@ fun AddEditScreen(
                         value = uiState.newTaskContent,
                         onValueChange = { viewModel.updateNewTaskContent(it) },
                         placeholder = {
-                            Text("Add task...", color = if (isColorDark(backgroundColor))
-                                Color.White.copy(alpha = 0.6f)
-                            else Color.Black.copy(alpha = 0.4f))
+                            Text(
+                                text = "Add task...",
+                                color = if (isColorDark(backgroundColor))
+                                    Color.White.copy(alpha = 0.6f)
+                                else Color.Black.copy(alpha = 0.4f)
+                            )
                         },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
@@ -270,7 +269,6 @@ fun AddEditScreen(
                 }
             }
 
-            // Color Picker
             item {
                 ColorPicker(
                     selectedColor = uiState.colorHex,
@@ -279,7 +277,6 @@ fun AddEditScreen(
                 )
             }
 
-            // Spacer for FAB
             item {
                 Spacer(modifier = Modifier.height(80.dp))
             }

@@ -2,6 +2,7 @@ package com.aura.todonotes.ui.screens.detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -20,8 +20,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.PushPinOutlined
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -95,8 +93,7 @@ fun DetailScreen(
                     note?.let {
                         IconButton(onClick = { viewModel.togglePin() }) {
                             Icon(
-                                imageVector = if (it.isPinned) Icons.Default.PushPin
-                                             else Icons.Default.PushPinOutlined,
+                                imageVector = Icons.Default.PushPin,
                                 contentDescription = "Pin",
                                 tint = if (isColorDark(backgroundColor)) Color.White
                                        else MaterialTheme.colorScheme.onSurface
@@ -178,7 +175,6 @@ fun DetailScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Lock indicator
                 if (note.isLocked) {
                     item {
                         Row(
@@ -199,7 +195,6 @@ fun DetailScreen(
                     }
                 }
 
-                // Title
                 if (note.title.isNotEmpty()) {
                     item {
                         Text(
@@ -211,7 +206,6 @@ fun DetailScreen(
                     }
                 }
 
-                // Content
                 if (note.content.isNotEmpty()) {
                     item {
                         Text(
@@ -223,7 +217,6 @@ fun DetailScreen(
                     }
                 }
 
-                // Tasks
                 if (uiState.tasks.isNotEmpty()) {
                     item {
                         Text(
@@ -246,7 +239,6 @@ fun DetailScreen(
                     }
                 }
 
-                // Date
                 item {
                     Text(
                         text = "Last updated: ${formatDate(note.updatedAt)}",
