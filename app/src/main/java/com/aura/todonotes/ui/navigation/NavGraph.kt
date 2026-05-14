@@ -21,7 +21,6 @@ import com.aura.todonotes.ui.screens.search.SearchScreen
 import com.aura.todonotes.ui.screens.settings.SettingsScreen
 import com.aura.todonotes.ui.screens.trash.TrashScreen
 
-
 @Composable
 fun AuraNavHost(
     navController: NavHostController = rememberNavController()
@@ -56,7 +55,7 @@ fun AuraNavHost(
     ) {
         composable(Screen.Home.route) {
             HomeScreen(
-                onNavigateToAddEdit = { navController.navigate(Screen.AddEdit.createRoute()) },
+                onNavigateToAddEdit = { navController.navigate(Screen.AddEdit.route) },
                 onNavigateToDetail = { noteId -> navController.navigate(Screen.Detail.createRoute(noteId)) },
                 onNavigateToSearch = { navController.navigate(Screen.Search.route) },
                 onNavigateToTrash = { navController.navigate(Screen.Trash.route) },
@@ -65,15 +64,7 @@ fun AuraNavHost(
             )
         }
 
-        composable(
-            route = Screen.AddEdit.route,
-            arguments = listOf(
-                navArgument("noteId") {
-                    type = NavType.LongType
-                    defaultValue = -1L
-                }
-            )
-        ) {
+        composable(Screen.AddEdit.route) {
             AddEditScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
@@ -84,14 +75,15 @@ fun AuraNavHost(
             arguments = listOf(
                 navArgument("noteId") { type = NavType.LongType }
             )
-        ) {
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getLong("noteId") ?: return@composable
             DetailScreen(
+                noteId = noteId,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToEdit = { noteId -> navController.navigate(Screen.AddEdit.createRoute(noteId)) },
-                onNavigateToLocked = { noteId -> navController.navigate(Screen.Locked.createRoute(noteId)) }
+                onNavigateToEdit = { navController.navigate(Screen.AddEdit.route) },
+                onNavigateToLocked = { navController.navigate(Screen.Locked.createRoute(noteId)) }
             )
         }
-
 
         composable(Screen.Trash.route) {
             TrashScreen(
@@ -99,14 +91,12 @@ fun AuraNavHost(
             )
         }
 
-
         composable(Screen.Archive.route) {
             ArchiveScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { noteId -> navController.navigate(Screen.Detail.createRoute(noteId)) }
             )
         }
-
 
         composable(Screen.Search.route) {
             SearchScreen(
@@ -122,14 +112,15 @@ fun AuraNavHost(
             )
         }
 
-
         composable(
             route = Screen.Locked.route,
             arguments = listOf(
                 navArgument("noteId") { type = NavType.LongType }
             )
-        ) {
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getLong("noteId") ?: return@composable
             LockedScreen(
+                noteId = noteId,
                 onNavigateBack = { navController.popBackStack() },
                 onUnlocked = { navController.popBackStack() }
             )

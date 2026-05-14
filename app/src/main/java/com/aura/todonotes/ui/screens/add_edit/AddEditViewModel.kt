@@ -1,7 +1,5 @@
 package com.aura.todonotes.ui.screens.add_edit
 
-
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aura.todonotes.domain.model.Note
@@ -17,6 +15,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class AddEditUiState(
+    val noteId: Long? = null,
     val title: String = "",
     val content: String = "",
     val colorHex: String = "#FFFFFF",
@@ -26,38 +25,32 @@ data class AddEditUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isEditMode: Boolean = false,
-    val noteId: Long? = null,
     val newTaskContent: String = "",
     val saveComplete: Boolean = false
 )
 
 @HiltViewModel
 class AddEditViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
     private val noteRepository: NoteRepository,
     private val taskRepository: TaskRepository
 ) : ViewModel() {
 
-
-    private val noteId: Long? = savedStateHandle.get<Long>("noteId")?.takeIf { it != -1L }
-
-    private val _uiState = MutableStateFlow(AddEditUiState(
-        isEditMode = noteId != null,
-        noteId = noteId
-    ))
+    private val _uiState = MutableStateFlow(AddEditUiState())
     val uiState: StateFlow<AddEditUiState> = _uiState.asStateFlow()
 
-    init {
-        noteId?.let { loadNote(it) }
-    }
-
-    private fun loadNote(id: Long) {
+    fun loadNote(noteId: Long) {
+        if (noteId <= 0) {
+            _uiState.value = AddEditUiState()
+            return
+        }
+        
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val note = noteRepository.getNoteById(id).first()
+            _uiState.value = _uiState.value.copy(isLoading = true, isEditMode = true, noteId = noteId)
+            val note = noteRepository.getNoteById(noteId).first()
             note?.let {
-                val tasks = taskRepository.getTasksByNoteIdSync(id)
+                val tasks = taskRepository.getTasksByNoteIdSync(noteId)
                 _uiState.value = _uiState.value.copy(
+                    noteId = noteId,
                     title = it.title,
                     content = it.content,
                     colorHex = it.colorHex,
@@ -66,8 +59,14 @@ class AddEditViewModel @Inject constructor(
                     tasks = tasks,
                     isLoading = false
                 )
+            } ?: run {
+                _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
+    }
+
+    fun resetState() {
+        _uiState.value = AddEditUiState()
     }
 
     fun updateTitle(title: String) {
@@ -99,7 +98,8 @@ class AddEditViewModel @Inject constructor(
         if (content.isEmpty()) return
 
         val newTask = Task(
-            noteId = noteId ?: 0,
+            id = 0,
+            noteId = _uiState.value.noteId ?: 0,
             content = content,
             position = _uiState.value.tasks.size
         )
@@ -125,9 +125,8 @@ class AddEditViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true)
 
-
             val note = Note(
-                id = noteId ?: 0,
+                id = _uiState.value.noteId ?: 0,
                 title = _uiState.value.title,
                 content = _uiState.value.content,
                 colorHex = _uiState.value.colorHex,
@@ -136,9 +135,9 @@ class AddEditViewModel @Inject constructor(
                 updatedAt = System.currentTimeMillis()
             )
 
-            val savedNoteId = if (noteId != null) {
+            val savedNoteId = if (_uiState.value.isEditMode && _uiState.value.noteId != null) {
                 noteRepository.updateNote(note)
-                noteId
+                _uiState.value.noteId!!
             } else {
                 noteRepository.insertNote(note)
             }

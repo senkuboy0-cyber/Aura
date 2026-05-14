@@ -9,7 +9,6 @@ import com.aura.todonotes.domain.repository.NoteRepository
 import com.aura.todonotes.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,7 +30,6 @@ class HomeViewModel @Inject constructor(
     private val noteRepository: NoteRepository,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
-
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()

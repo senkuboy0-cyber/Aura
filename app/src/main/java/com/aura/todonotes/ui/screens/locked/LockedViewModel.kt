@@ -1,6 +1,5 @@
 package com.aura.todonotes.ui.screens.locked
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aura.todonotes.domain.repository.SettingsRepository
@@ -19,15 +18,11 @@ data class LockedUiState(
     val isVerifying: Boolean = false
 )
 
-
 @HiltViewModel
 class LockedViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
-
-    private val noteId: Long = savedStateHandle.get<Long>("noteId") ?: 0L
     private val _uiState = MutableStateFlow(LockedUiState())
     val uiState: StateFlow<LockedUiState> = _uiState.asStateFlow()
 
