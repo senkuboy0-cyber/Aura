@@ -1,52 +1,34 @@
 package com.aura.todonotes.ui.screens.home
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewAgenda
-import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,15 +36,11 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberBottomSheetScaffoldState
-import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -71,7 +49,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -113,11 +90,7 @@ fun HomeScreen(
                 },
                 actions = {
                     IconButton(onClick = onNavigateToSearch) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                        Icon(Icons.Default.Search, "Search")
                     }
                     Box {
                         IconButton(onClick = { showViewMenu = true }) {
@@ -145,10 +118,7 @@ fun HomeScreen(
                     }
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Sort,
-                                contentDescription = "Sort"
-                            )
+                            Icon(Icons.Default.Sort, "Sort")
                         }
                         DropdownMenu(
                             expanded = showSortMenu,
@@ -172,35 +142,36 @@ fun HomeScreen(
                         }
                     }
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings"
-                        )
+                        Icon(Icons.Default.Settings, "Settings")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                ),
-                modifier = Modifier.padding(top = WindowInsets.statusBars.asPaddingValues())
+                )
             )
         },
         bottomBar = {
-            NavigationBar(
+            BottomAppBar(
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 8.dp
             ) {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onNavigateToTrash,
-                    icon = { Icon(Icons.Default.Delete, "Trash") },
-                    label = { Text("Trash") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onNavigateToArchive,
-                    icon = { Icon(Icons.Default.Archive, "Archive") },
-                    label = { Text("Archive") }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    IconButton(onClick = onNavigateToTrash) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Delete, "Trash")
+                            Text("Trash", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    IconButton(onClick = onNavigateToArchive) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Archive, "Archive")
+                            Text("Archive", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
             }
         },
         floatingActionButton = {
@@ -213,11 +184,9 @@ fun HomeScreen(
             FloatingActionButton(
                 onClick = onNavigateToAddEdit,
                 containerColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .scale(scale)
-                    .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+                modifier = Modifier.scale(scale)
             ) {
-                Icon(Icons.Default.Add, "Add Note", tint = Color.White)
+                Icon(Icons.Default.ViewAgenda, "Add Note", tint = Color.White)
             }
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -298,7 +267,7 @@ private fun AnimatedNoteItem(
         label = "note_scale"
     )
 
-    Box(
+    Column(
         modifier = Modifier
             .scale(scale)
             .clickable(onClick = onClick)
