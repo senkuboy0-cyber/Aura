@@ -1,0 +1,72 @@
+name: Aura Todo Notes - Build & Release
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+
+      - name: Setup Gradle Wrapper
+        run: |
+          mkdir -p gradle/wrapper
+
+          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
+          echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-9.5.1-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
+          echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
+          echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+
+          curl -L -o gradle/wrapper/gradle-wrapper.jar \
+          https://github.com/AntennaPod/AntennaPod/raw/master/gradle/wrapper/gradle-wrapper.jar
+
+          curl -L -o gradlew \
+          https://github.com/AntennaPod/AntennaPod/raw/master/gradlew
+
+          chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aura-TodoNotes-Debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Aura Todo Notes Release ${{ github.run_number }}
+          body: |
+            Aura Todo Notes App - Auto Build
+
+            A modern, feature-rich todo and notes application.
+
+            Features:
+            - Notes Management
+            - Task Lists
+            - Color Coding
+            - Search
+            - PIN Lock
+            - Dark/Light Mode
+            - Animations
+
+          files: app/build/outputs/apk/debug/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
