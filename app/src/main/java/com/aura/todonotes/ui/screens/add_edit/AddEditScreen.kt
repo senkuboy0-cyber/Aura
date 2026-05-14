@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.PushPinOutlined
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,6 +85,19 @@ fun AddEditScreen(
     val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
     val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
 
+    // Animations outside TopAppBar actions
+    val pinScale by animateFloatAsState(
+        targetValue = if (uiState.isPinned) 1.2f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "pin_scale"
+    )
+
+    val fabScale by animateFloatAsState(
+        targetValue = if (uiState.isSaving) 0.9f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "fab_scale"
+    )
+
     LaunchedEffect(uiState.saveComplete) {
         if (uiState.saveComplete) {
             onNavigateBack()
@@ -111,14 +125,9 @@ fun AddEditScreen(
                 },
                 actions = {
                     // Pin button
-                    val pinScale by animateFloatAsState(
-                        targetValue = if (uiState.isPinned) 1.2f else 1f,
-                        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                        label = "pin_scale"
-                    )
                     IconButton(onClick = { viewModel.togglePin() }) {
                         Icon(
-                            imageVector = Icons.Default.PushPin,
+                            imageVector = if (uiState.isPinned) Icons.Default.PushPin else Icons.Default.PushPinOutlined,
                             contentDescription = "Pin",
                             tint = if (uiState.isPinned) MaterialTheme.colorScheme.primary else textColor,
                             modifier = Modifier.scale(pinScale)
@@ -138,17 +147,11 @@ fun AddEditScreen(
             )
         },
         floatingActionButton = {
-            val scale by animateFloatAsState(
-                targetValue = if (uiState.isSaving) 0.9f else 1f,
-                animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                label = "fab_scale"
-            )
-
             FloatingActionButton(
                 onClick = { viewModel.saveNote() },
                 containerColor = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .scale(scale)
+                    .scale(fabScale)
                     .navigationBarsPadding()
             ) {
                 if (uiState.isSaving) {
@@ -382,7 +385,7 @@ private fun ColorPickerRow(
                 val scale by animateFloatAsState(
                     targetValue = if (isSelected) 1.2f else 1f,
                     animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                    label = "color_scale"
+                    label = "color_scale_$colorHex"
                 )
 
                 Box(
