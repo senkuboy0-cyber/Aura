@@ -1,7 +1,18 @@
 package com.aura.todonotes.ui.screens.add_edit
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,25 +21,31 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.PushPinOutlined
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -39,28 +56,39 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.aura.todonotes.ui.components.ColorPicker
-import com.aura.todonotes.ui.components.TaskItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditScreen(
+    noteId: Long?,
     onNavigateBack: () -> Unit,
     viewModel: AddEditViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(noteId) {
+        if (noteId != null && noteId > 0) {
+            viewModel.loadNote(noteId)
+        } else {
+            viewModel.resetState()
+        }
+    }
+
     val backgroundColor = try {
         Color(android.graphics.Color.parseColor(uiState.colorHex))
     } catch (e: Exception) {
         MaterialTheme.colorScheme.surface
     }
 
-    val textColor = if (isColorDark(backgroundColor)) Color.White else Color.Black
-    val placeholderColor = textColor.copy(alpha = 0.5f)
+    val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
 
     LaunchedEffect(uiState.saveComplete) {
         if (uiState.saveComplete) {
@@ -74,7 +102,8 @@ fun AddEditScreen(
                 title = {
                     Text(
                         text = if (uiState.isEditMode) "Edit Note" else "New Note",
-                        color = textColor
+                        color = textColor,
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
@@ -87,135 +116,355 @@ fun AddEditScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.togglePin() }) {
-                        Icon(
-                            imageVector = Icons.Default.PushPin,
-                            contentDescription = "Pin",
-                            tint = textColor
-                        )
-                    }
-                    IconButton(onClick = { viewModel.toggleLock() }) {
-                        Icon(
-                            imageVector = if (uiState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                            contentDescription = "Lock",
-                            tint = textColor
-                        )
-                    }
+                    // Pin button
+                    AnimatedIconButton(
+                        isActive = uiState.isPinned,
+                        activeIcon = Icons.Default.PushPin,
+                        inactiveIcon = Icons.Default.PushPinOutlined,
+                        contentDescription = "Pin",
+                        tint = textColor,
+                        onClick = { viewModel.togglePin() }
+                    )
+
+                    // Lock button
+                    AnimatedIconButton(
+                        isActive = uiState.isLocked,
+                        activeIcon = Icons.Default.Lock,
+                        inactiveIcon = Icons.Default.LockOpen,
+                        contentDescription = "Lock",
+                        tint = textColor,
+                        onClick = { viewModel.toggleLock() }
+                    )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor),
+                modifier = Modifier.padding(top = androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues())
             )
         },
         floatingActionButton = {
+            val scale by animateFloatAsState(
+                targetValue = if (uiState.isSaving) 0.9f else 1f,
+                animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                label = "fab_scale"
+            )
+
             FloatingActionButton(
                 onClick = { viewModel.saveNote() },
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .scale(scale)
+                    .navigationBarsPadding()
             ) {
                 if (uiState.isSaving) {
                     CircularProgressIndicator(
-                        modifier = Modifier.padding(8.dp),
-                        color = Color.White
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
                     )
                 } else {
-                    Icon(Icons.Default.Check, "Save")
+                    Icon(Icons.Default.Check, "Save", tint = Color.White)
                 }
             }
-        }
+        },
+        containerColor = backgroundColor
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundColor)
                 .padding(padding)
-                .padding(16.dp)
                 .imePadding()
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            // Title
             item {
-                OutlinedTextField(
+                BasicTextField(
                     value = uiState.title,
                     onValueChange = { viewModel.updateTitle(it) },
-                    placeholder = { Text("Title", color = placeholderColor) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedTextColor = textColor,
-                        unfocusedTextColor = textColor,
-                        focusedPlaceholderColor = placeholderColor,
-                        unfocusedPlaceholderColor = placeholderColor
-                    ),
-                    textStyle = MaterialTheme.typography.titleLarge.copy(color = textColor),
-                    singleLine = true
+                    textStyle = MaterialTheme.typography.headlineSmall.copy(color = textColor),
+                    cursorBrush = SolidColor(textColor),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    decorationBox = { innerTextField ->
+                        Box {
+                            if (uiState.title.isEmpty()) {
+                                Text(
+                                    text = "Title",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = subtleColor
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
             }
 
+            // Content
             item {
-                OutlinedTextField(
+                BasicTextField(
                     value = uiState.content,
                     onValueChange = { viewModel.updateContent(it) },
-                    placeholder = { Text("Write your note...", color = placeholderColor) },
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedTextColor = textColor,
-                        unfocusedTextColor = textColor,
-                        focusedPlaceholderColor = placeholderColor,
-                        unfocusedPlaceholderColor = placeholderColor
-                    ),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = textColor)
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = textColor.copy(alpha = 0.9f)),
+                    cursorBrush = SolidColor(textColor),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .padding(vertical = 8.dp),
+                    decorationBox = { innerTextField ->
+                        Box {
+                            if (uiState.content.isEmpty()) {
+                                Text(
+                                    text = "Write your note...",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = subtleColor
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
             }
 
+            // Tasks Section
             if (uiState.tasks.isNotEmpty()) {
                 item {
-                    Text("Tasks", style = MaterialTheme.typography.titleMedium, color = textColor)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 16.dp)
+                    ) {
+                        Text(
+                            text = "Tasks",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = textColor
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "(${uiState.tasks.count { it.isCompleted }}/${uiState.tasks.size})",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = subtleColor
+                        )
+                    }
                 }
-                itemsIndexed(items = uiState.tasks, key = { index, _ -> "task_$index" }) { index, task ->
-                    TaskItem(task = task, onToggle = { viewModel.toggleTask(index) }, onDelete = { viewModel.removeTask(index) })
+
+                itemsIndexed(
+                    items = uiState.tasks,
+                    key = { _, task -> task.id }
+                ) { index, task ->
+                    AnimatedTaskItem(
+                        task = task,
+                        onToggle = { viewModel.toggleTask(index) },
+                        onDelete = { viewModel.removeTask(index) },
+                        textColor = textColor,
+                        subtleColor = subtleColor
+                    )
                 }
             }
 
+            // Add Task Input
             item {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(subtleColor.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = subtleColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    BasicTextField(
                         value = uiState.newTaskContent,
                         onValueChange = { viewModel.updateNewTaskContent(it) },
-                        placeholder = { Text("Add task...", color = placeholderColor) },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedBorderColor = placeholderColor,
-                            unfocusedBorderColor = placeholderColor.copy(alpha = 0.5f),
-                            focusedTextColor = textColor,
-                            unfocusedTextColor = textColor,
-                            focusedPlaceholderColor = placeholderColor,
-                            unfocusedPlaceholderColor = placeholderColor
-                        ),
                         textStyle = MaterialTheme.typography.bodyMedium.copy(color = textColor),
+                        cursorBrush = SolidColor(textColor),
+                        modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { viewModel.addTask() })
+                        keyboardActions = KeyboardActions(onDone = { viewModel.addTask() }),
+                        decorationBox = { innerTextField ->
+                            Box {
+                                if (uiState.newTaskContent.isEmpty()) {
+                                    Text(
+                                        text = "Add a task...",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = subtleColor
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
                     )
-                    IconButton(onClick = { viewModel.addTask() }, enabled = uiState.newTaskContent.isNotBlank()) {
-                        Icon(Icons.Default.Add, "Add Task", tint = textColor)
+                    if (uiState.newTaskContent.isNotBlank()) {
+                        IconButton(onClick = { viewModel.addTask() }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Task",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
 
+            // Color Picker
             item {
-                ColorPicker(selectedColor = uiState.colorHex, onColorSelected = { viewModel.updateColor(it) }, modifier = Modifier.padding(top = 8.dp))
+                ColorPickerRow(
+                    selectedColor = uiState.colorHex,
+                    onColorSelected = { viewModel.updateColor(it) },
+                    textColor = textColor,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
             }
 
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
+            item { Spacer(modifier = Modifier.height(100.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun AnimatedIconButton(
+    isActive: Boolean,
+    activeIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    inactiveIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    tint: Color,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isActive) 1.1f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "icon_scale"
+    )
+
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.scale(scale)
+    ) {
+        Icon(
+            imageVector = if (isActive) activeIcon else inactiveIcon,
+            contentDescription = contentDescription,
+            tint = if (isActive) MaterialTheme.colorScheme.primary else tint
+        )
+    }
+}
+
+@Composable
+private fun AnimatedTaskItem(
+    task: com.aura.todonotes.domain.model.Task,
+    onToggle: () -> Unit,
+    onDelete: () -> Unit,
+    textColor: Color,
+    subtleColor: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (task.isCompleted) subtleColor.copy(alpha = 0.1f) else Color.Transparent)
+            .clickable(onClick = onToggle)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+            contentDescription = if (task.isCompleted) "Completed" else "Not completed",
+            tint = if (task.isCompleted) Color(0xFF4CAF50) else subtleColor,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = task.content,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (task.isCompleted) textColor.copy(alpha = 0.5f) else textColor,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ColorPickerRow(
+    selectedColor: String,
+    onColorSelected: (String) -> Unit,
+    textColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = "Color",
+            style = MaterialTheme.typography.labelMedium,
+            color = textColor.copy(alpha = 0.6f),
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        androidx.compose.foundation.layout.Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            val colors = listOf(
+                "#FFFFFFFF", "#FFFFEB3B", "#FFFF9800", "#FFFF5722",
+                "#FFEF5350", "#FFBA68C8", "#FF7986CB", "#FF4DB6AC",
+                "#FF66BB6A", "#FF42A5F5", "#FF26C6DA", "#FFF06292"
+            )
+            colors.forEach { colorHex ->
+                ColorDot(
+                    colorHex = colorHex,
+                    isSelected = colorHex == selectedColor,
+                    onClick = { onColorSelected(colorHex) }
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun ColorDot(
+    colorHex: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val color = try {
+        Color(android.graphics.Color.parseColor(colorHex))
+    } catch (e: Exception) {
+        Color.White
+    }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.2f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "color_scale"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .scale(scale)
+            .clip(CircleShape)
+            .background(color)
+            .clickable(onClick = onClick)
+            .padding(if (isSelected) 2.dp else 0.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.3f))
+            )
         }
     }
 }
@@ -224,3 +473,6 @@ private fun isColorDark(color: Color): Boolean {
     val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
     return luminance < 0.5
 }
+
+private val androidx.compose.foundation.layout.PaddingValues.Companion.statusBars
+    get() = this
