@@ -1,11 +1,7 @@
 package com.aura.todonotes.ui.screens.add_edit
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,10 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -34,10 +28,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -66,6 +59,9 @@ fun AddEditScreen(
         MaterialTheme.colorScheme.surface
     }
 
+    val textColor = if (isColorDark(backgroundColor)) Color.White else Color.Black
+    val placeholderColor = textColor.copy(alpha = 0.5f)
+
     LaunchedEffect(uiState.saveComplete) {
         if (uiState.saveComplete) {
             onNavigateBack()
@@ -78,8 +74,7 @@ fun AddEditScreen(
                 title = {
                     Text(
                         text = if (uiState.isEditMode) "Edit Note" else "New Note",
-                        color = if (isColorDark(backgroundColor)) Color.White
-                               else MaterialTheme.colorScheme.onSurface
+                        color = textColor
                     )
                 },
                 navigationIcon = {
@@ -87,34 +82,27 @@ fun AddEditScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = if (isColorDark(backgroundColor)) Color.White
-                                   else MaterialTheme.colorScheme.onSurface
+                            tint = textColor
                         )
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.togglePin() }) {
                         Icon(
-                            imageVector = if (uiState.isPinned) Icons.Default.PushPin
-                                         else Icons.Default.PushPin,
+                            imageVector = Icons.Default.PushPin,
                             contentDescription = "Pin",
-                            tint = if (isColorDark(backgroundColor)) Color.White
-                                   else MaterialTheme.colorScheme.onSurface
+                            tint = textColor
                         )
                     }
                     IconButton(onClick = { viewModel.toggleLock() }) {
                         Icon(
-                            imageVector = if (uiState.isLocked) Icons.Default.Lock
-                                         else Icons.Default.LockOpen,
+                            imageVector = if (uiState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
                             contentDescription = "Lock",
-                            tint = if (isColorDark(backgroundColor)) Color.White
-                                   else MaterialTheme.colorScheme.onSurface
+                            tint = textColor
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
             )
         },
         floatingActionButton = {
@@ -147,25 +135,19 @@ fun AddEditScreen(
                 OutlinedTextField(
                     value = uiState.title,
                     onValueChange = { viewModel.updateTitle(it) },
-                    placeholder = {
-                        Text(
-                            text = "Title",
-                            color = if (isColorDark(backgroundColor))
-                                Color.White.copy(alpha = 0.6f)
-                            else Color.Black.copy(alpha = 0.4f)
-                        )
-                    },
+                    placeholder = { Text("Title", color = placeholderColor) },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
+                    colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedTextColor = textColor,
+                        unfocusedTextColor = textColor,
+                        focusedPlaceholderColor = placeholderColor,
+                        unfocusedPlaceholderColor = placeholderColor
                     ),
-                    textStyle = MaterialTheme.typography.titleLarge.copy(
-                        color = if (isColorDark(backgroundColor)) Color.White
-                               else Color.Black
-                    ),
+                    textStyle = MaterialTheme.typography.titleLarge.copy(color = textColor),
                     singleLine = true
                 )
             }
@@ -174,107 +156,61 @@ fun AddEditScreen(
                 OutlinedTextField(
                     value = uiState.content,
                     onValueChange = { viewModel.updateContent(it) },
-                    placeholder = {
-                        Text(
-                            text = "Write your note...",
-                            color = if (isColorDark(backgroundColor))
-                                Color.White.copy(alpha = 0.6f)
-                            else Color.Black.copy(alpha = 0.4f)
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    colors = TextFieldDefaults.colors(
+                    placeholder = { Text("Write your note...", color = placeholderColor) },
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedTextColor = textColor,
+                        unfocusedTextColor = textColor,
+                        focusedPlaceholderColor = placeholderColor,
+                        unfocusedPlaceholderColor = placeholderColor
                     ),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = if (isColorDark(backgroundColor)) Color.White
-                               else Color.Black
-                    )
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = textColor)
                 )
             }
 
             if (uiState.tasks.isNotEmpty()) {
                 item {
-                    Text(
-                        text = "Tasks",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (isColorDark(backgroundColor)) Color.White
-                               else MaterialTheme.colorScheme.onSurface
-                    )
+                    Text("Tasks", style = MaterialTheme.typography.titleMedium, color = textColor)
                 }
-
-                itemsIndexed(
-                    items = uiState.tasks,
-                    key = { index, _ -> "task_$index" }
-                ) { index, task ->
-                    TaskItem(
-                        task = task,
-                        onToggle = { viewModel.toggleTask(index) },
-                        onDelete = { viewModel.removeTask(index) }
-                    )
+                itemsIndexed(items = uiState.tasks, key = { index, _ -> "task_$index" }) { index, task ->
+                    TaskItem(task = task, onToggle = { viewModel.toggleTask(index) }, onDelete = { viewModel.removeTask(index) })
                 }
             }
 
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = uiState.newTaskContent,
                         onValueChange = { viewModel.updateNewTaskContent(it) },
-                        placeholder = {
-                            Text(
-                                text = "Add task...",
-                                color = if (isColorDark(backgroundColor))
-                                    Color.White.copy(alpha = 0.6f)
-                                else Color.Black.copy(alpha = 0.4f)
-                            )
-                        },
+                        placeholder = { Text("Add task...", color = placeholderColor) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = TextFieldDefaults.colors(
+                        colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
-                            focusedBorderColor = if (isColorDark(backgroundColor))
-                                Color.White.copy(alpha = 0.5f)
-                            else Color.Black.copy(alpha = 0.3f),
-                            unfocusedBorderColor = if (isColorDark(backgroundColor))
-                                Color.White.copy(alpha = 0.3f)
-                            else Color.Black.copy(alpha = 0.2f)
+                            focusedBorderColor = placeholderColor,
+                            unfocusedBorderColor = placeholderColor.copy(alpha = 0.5f),
+                            focusedTextColor = textColor,
+                            unfocusedTextColor = textColor,
+                            focusedPlaceholderColor = placeholderColor,
+                            unfocusedPlaceholderColor = placeholderColor
                         ),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = if (isColorDark(backgroundColor)) Color.White
-                                   else Color.Black
-                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = textColor),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { viewModel.addTask() })
                     )
-                    IconButton(
-                        onClick = { viewModel.addTask() },
-                        enabled = uiState.newTaskContent.isNotBlank()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Task",
-                            tint = if (isColorDark(backgroundColor)) Color.White
-                                   else MaterialTheme.colorScheme.primary
-                        )
+                    IconButton(onClick = { viewModel.addTask() }, enabled = uiState.newTaskContent.isNotBlank()) {
+                        Icon(Icons.Default.Add, "Add Task", tint = textColor)
                     }
                 }
             }
 
             item {
-                ColorPicker(
-                    selectedColor = uiState.colorHex,
-                    onColorSelected = { viewModel.updateColor(it) },
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                ColorPicker(selectedColor = uiState.colorHex, onColorSelected = { viewModel.updateColor(it) }, modifier = Modifier.padding(top = 8.dp))
             }
 
             item {
@@ -285,6 +221,6 @@ fun AddEditScreen(
 }
 
 private fun isColorDark(color: Color): Boolean {
-    val luminance = (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue)
+    val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
     return luminance < 0.5
 }
