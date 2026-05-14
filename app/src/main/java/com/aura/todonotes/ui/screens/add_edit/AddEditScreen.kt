@@ -1,13 +1,8 @@
 package com.aura.todonotes.ui.screens.add_edit
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +33,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.PushPinOutlined
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -117,27 +111,30 @@ fun AddEditScreen(
                 },
                 actions = {
                     // Pin button
-                    AnimatedIconButton(
-                        isActive = uiState.isPinned,
-                        activeIcon = Icons.Default.PushPin,
-                        inactiveIcon = Icons.Default.PushPinOutlined,
-                        contentDescription = "Pin",
-                        tint = textColor,
-                        onClick = { viewModel.togglePin() }
+                    val pinScale by animateFloatAsState(
+                        targetValue = if (uiState.isPinned) 1.2f else 1f,
+                        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                        label = "pin_scale"
                     )
+                    IconButton(onClick = { viewModel.togglePin() }) {
+                        Icon(
+                            imageVector = Icons.Default.PushPin,
+                            contentDescription = "Pin",
+                            tint = if (uiState.isPinned) MaterialTheme.colorScheme.primary else textColor,
+                            modifier = Modifier.scale(pinScale)
+                        )
+                    }
 
                     // Lock button
-                    AnimatedIconButton(
-                        isActive = uiState.isLocked,
-                        activeIcon = Icons.Default.Lock,
-                        inactiveIcon = Icons.Default.LockOpen,
-                        contentDescription = "Lock",
-                        tint = textColor,
-                        onClick = { viewModel.toggleLock() }
-                    )
+                    IconButton(onClick = { viewModel.toggleLock() }) {
+                        Icon(
+                            imageVector = if (uiState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            contentDescription = "Lock",
+                            tint = if (uiState.isLocked) MaterialTheme.colorScheme.primary else textColor
+                        )
+                    }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor),
-                modifier = Modifier.padding(top = androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues())
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
             )
         },
         floatingActionButton = {
@@ -254,13 +251,29 @@ fun AddEditScreen(
                     items = uiState.tasks,
                     key = { _, task -> task.id }
                 ) { index, task ->
-                    AnimatedTaskItem(
-                        task = task,
-                        onToggle = { viewModel.toggleTask(index) },
-                        onDelete = { viewModel.removeTask(index) },
-                        textColor = textColor,
-                        subtleColor = subtleColor
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (task.isCompleted) subtleColor.copy(alpha = 0.1f) else Color.Transparent)
+                            .clickable(onClick = { viewModel.toggleTask(index) })
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                            contentDescription = if (task.isCompleted) "Completed" else "Not completed",
+                            tint = if (task.isCompleted) Color(0xFF4CAF50) else subtleColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = task.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (task.isCompleted) textColor.copy(alpha = 0.5f) else textColor,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
@@ -336,66 +349,6 @@ fun AddEditScreen(
 }
 
 @Composable
-private fun AnimatedIconButton(
-    isActive: Boolean,
-    activeIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    inactiveIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    tint: Color,
-    onClick: () -> Unit
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isActive) 1.1f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "icon_scale"
-    )
-
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier.scale(scale)
-    ) {
-        Icon(
-            imageVector = if (isActive) activeIcon else inactiveIcon,
-            contentDescription = contentDescription,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else tint
-        )
-    }
-}
-
-@Composable
-private fun AnimatedTaskItem(
-    task: com.aura.todonotes.domain.model.Task,
-    onToggle: () -> Unit,
-    onDelete: () -> Unit,
-    textColor: Color,
-    subtleColor: Color
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (task.isCompleted) subtleColor.copy(alpha = 0.1f) else Color.Transparent)
-            .clickable(onClick = onToggle)
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-            contentDescription = if (task.isCompleted) "Completed" else "Not completed",
-            tint = if (task.isCompleted) Color(0xFF4CAF50) else subtleColor,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = task.content,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (task.isCompleted) textColor.copy(alpha = 0.5f) else textColor,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
 private fun ColorPickerRow(
     selectedColor: String,
     onColorSelected: (String) -> Unit,
@@ -410,7 +363,7 @@ private fun ColorPickerRow(
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        androidx.compose.foundation.layout.Row(
+        Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -420,51 +373,27 @@ private fun ColorPickerRow(
                 "#FF66BB6A", "#FF42A5F5", "#FF26C6DA", "#FFF06292"
             )
             colors.forEach { colorHex ->
-                ColorDot(
-                    colorHex = colorHex,
-                    isSelected = colorHex == selectedColor,
-                    onClick = { onColorSelected(colorHex) }
+                val color = try {
+                    Color(android.graphics.Color.parseColor(colorHex))
+                } catch (e: Exception) {
+                    Color.White
+                }
+                val isSelected = colorHex == selectedColor
+                val scale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.2f else 1f,
+                    animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                    label = "color_scale"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .scale(scale)
+                        .clip(CircleShape)
+                        .background(color)
+                        .clickable(onClick = { onColorSelected(colorHex) })
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun ColorDot(
-    colorHex: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val color = try {
-        Color(android.graphics.Color.parseColor(colorHex))
-    } catch (e: Exception) {
-        Color.White
-    }
-
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.2f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "color_scale"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .scale(scale)
-            .clip(CircleShape)
-            .background(color)
-            .clickable(onClick = onClick)
-            .padding(if (isSelected) 2.dp else 0.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.3f))
-            )
         }
     }
 }
@@ -473,6 +402,3 @@ private fun isColorDark(color: Color): Boolean {
     val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
     return luminance < 0.5
 }
-
-private val androidx.compose.foundation.layout.PaddingValues.Companion.statusBars
-    get() = this
