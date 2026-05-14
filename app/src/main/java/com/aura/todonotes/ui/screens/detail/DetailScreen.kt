@@ -10,14 +10,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,6 +28,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.PushPinOutlined
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -124,7 +122,7 @@ fun DetailScreen(
                     note?.let { n ->
                         IconButton(onClick = { viewModel.togglePin() }) {
                             Icon(
-                                imageVector = Icons.Default.PushPin,
+                                imageVector = if (n.isPinned) Icons.Default.PushPin else Icons.Default.PushPinOutlined,
                                 contentDescription = "Pin",
                                 tint = if (n.isPinned) MaterialTheme.colorScheme.primary else textColor,
                                 modifier = Modifier.scale(pinScale)
@@ -152,18 +150,20 @@ fun DetailScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor),
-                modifier = Modifier.padding(top = WindowInsets.statusBars.asPaddingValues())
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
             )
         },
         containerColor = backgroundColor
-    ) { padding ->
+    ) { paddingValues ->
+        val topPadding = paddingValues.calculateTopPadding()
+        val bottomPadding = paddingValues.calculateBottomPadding()
+
         when {
             uiState.isLoading -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding),
+                        .padding(top = topPadding),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -174,7 +174,7 @@ fun DetailScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding),
+                        .padding(top = topPadding),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -185,7 +185,7 @@ fun DetailScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding)
+                        .padding(top = topPadding, bottom = bottomPadding)
                         .padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
