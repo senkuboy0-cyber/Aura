@@ -11,11 +11,11 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-
 
 @Composable
 fun AnimatedScaleContent(
@@ -70,11 +70,7 @@ fun PulsingScale(
         label = "pulse"
     )
 
-    androidx.compose.runtime.CompositionLocalProvider(
-        LocalInspectionMode provides if (isPressed) 0.95f else 1f
-    ) {
-        androidx.compose.foundation.layout.Box(modifier = modifier.scale(scale)) {
-            content()
-        }
+    Box(modifier = modifier.scale(scale)) {
+        content()
     }
 }
