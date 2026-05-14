@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.PushPinOutlined
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -61,7 +62,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Helper function to parse color outside composable context
 private fun parseColorSafe(colorHex: String?, fallback: Color): Color {
     return try {
         colorHex?.let { Color(android.graphics.Color.parseColor(it)) } ?: fallback
@@ -89,13 +89,20 @@ fun DetailScreen(
 
     val note = uiState.note
     
-    // Parse color safely - no Composable calls inside try-catch
     val backgroundColor = remember(note?.colorHex) {
         parseColorSafe(note?.colorHex, MaterialTheme.colorScheme.surface)
     }
 
     val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
     val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+
+    // Animation outside actions block
+    val isPinned = note?.isPinned ?: false
+    val pinScale by animateFloatAsState(
+        targetValue = if (isPinned) 1.2f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "pin_scale"
+    )
 
     LaunchedEffect(uiState.isDeleted) {
         if (uiState.isDeleted) {
@@ -114,14 +121,9 @@ fun DetailScreen(
                 },
                 actions = {
                     note?.let { n ->
-                        val pinScale by animateFloatAsState(
-                            targetValue = if (n.isPinned) 1.2f else 1f,
-                            animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                            label = "pin_scale"
-                        )
                         IconButton(onClick = { viewModel.togglePin() }) {
                             Icon(
-                                imageVector = Icons.Default.PushPin,
+                                imageVector = if (n.isPinned) Icons.Default.PushPin else Icons.Default.PushPinOutlined,
                                 contentDescription = "Pin",
                                 tint = if (n.isPinned) MaterialTheme.colorScheme.primary else textColor,
                                 modifier = Modifier.scale(pinScale)
@@ -187,7 +189,6 @@ fun DetailScreen(
                 ) {
                     item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                    // Lock indicator
                     if (note.isLocked) {
                         item {
                             Row(
@@ -205,7 +206,6 @@ fun DetailScreen(
                         }
                     }
 
-                    // Title
                     if (note.title.isNotEmpty()) {
                         item {
                             Text(
@@ -217,7 +217,6 @@ fun DetailScreen(
                         }
                     }
 
-                    // Content
                     if (note.content.isNotEmpty()) {
                         item {
                             Text(
@@ -228,7 +227,6 @@ fun DetailScreen(
                         }
                     }
 
-                    // Tasks
                     if (uiState.tasks.isNotEmpty()) {
                         item {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
