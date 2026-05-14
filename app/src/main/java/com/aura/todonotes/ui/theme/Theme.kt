@@ -1,5 +1,6 @@
 package com.aura.todonotes.ui.theme
 
+
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.aura.todonotes.domain.model.ThemeOption
 
 private val LightColorScheme = lightColorScheme(
     primary = md_theme_light_primary,
@@ -77,10 +79,18 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun AuraTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeOption: ThemeOption = ThemeOption.SYSTEM,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val systemDarkTheme = isSystemInDarkTheme()
+    
+    val darkTheme = when (themeOption) {
+        ThemeOption.SYSTEM -> systemDarkTheme
+        ThemeOption.DARK -> true
+        ThemeOption.LIGHT -> false
+    }
+
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
@@ -89,6 +99,7 @@ fun AuraTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+    
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
