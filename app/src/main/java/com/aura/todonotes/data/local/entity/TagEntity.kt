@@ -1,0 +1,14 @@
+package com.aura.todonotes.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+
+@Entity(tableName = "tags")
+data class TagEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val colorHex: String = "#6200EE",
+    val createdAt: Long = System.currentTimeMillis()
+)
