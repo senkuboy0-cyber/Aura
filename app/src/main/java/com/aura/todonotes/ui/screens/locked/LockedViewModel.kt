@@ -25,7 +25,6 @@ class LockedViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
-
     private val noteId: Long = savedStateHandle.get<Long>("noteId") ?: 0L
 
     private val _uiState = MutableStateFlow(LockedUiState())
@@ -34,7 +33,7 @@ class LockedViewModel @Inject constructor(
     fun onNumberClick(number: String) {
         val state = _uiState.value
         if (state.pin.length < 4) {
-            _uiState.value = state.copy(pn = state.pin + number, error = null)
+            _uiState.value = state.copy(pin = state.pin + number, error = null)
             if (state.pin.length + 1 == 4) {
                 verifyPin()
             }
