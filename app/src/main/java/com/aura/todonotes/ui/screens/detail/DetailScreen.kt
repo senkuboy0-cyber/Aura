@@ -61,6 +61,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Helper function to parse color outside composable context
+private fun parseColorSafe(colorHex: String?, fallback: Color): Color {
+    return try {
+        colorHex?.let { Color(android.graphics.Color.parseColor(it)) } ?: fallback
+    } catch (e: Exception) {
+        fallback
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
@@ -79,13 +88,10 @@ fun DetailScreen(
     }
 
     val note = uiState.note
+    
+    // Parse color safely - no Composable calls inside try-catch
     val backgroundColor = remember(note?.colorHex) {
-        try {
-            note?.colorHex?.let { Color(android.graphics.Color.parseColor(it)) }
-                ?: MaterialTheme.colorScheme.surface
-        } catch (e: Exception) {
-            MaterialTheme.colorScheme.surface
-        }
+        parseColorSafe(note?.colorHex, MaterialTheme.colorScheme.surface)
     }
 
     val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
