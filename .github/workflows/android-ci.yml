@@ -19,14 +19,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-
       - name: Setup Gradle Wrapper
         run: |
           mkdir -p gradle/wrapper
 
           echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
           echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-9.5.1-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
+          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
           echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
           echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
 
@@ -37,6 +36,10 @@ jobs:
           https://github.com/AntennaPod/AntennaPod/raw/master/gradlew
 
           chmod +x gradlew
+
+      - name: Update AGP Version
+        run: |
+          sed -i 's/agp = "9.2.1"/agp = "8.13.2"/' gradle/libs.versions.toml
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
