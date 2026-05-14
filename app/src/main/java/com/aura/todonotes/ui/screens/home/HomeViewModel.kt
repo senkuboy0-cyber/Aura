@@ -9,6 +9,7 @@ import com.aura.todonotes.domain.repository.NoteRepository
 import com.aura.todonotes.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -55,9 +56,9 @@ class HomeViewModel @Inject constructor(
                     notesCount = count
                 )
             }.stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                HomeUiState()
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = HomeUiState()
             ).collect { state ->
                 _uiState.value = state
             }
