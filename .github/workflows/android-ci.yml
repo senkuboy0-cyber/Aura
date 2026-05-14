@@ -37,10 +37,6 @@ jobs:
 
           chmod +x gradlew
 
-      - name: Update AGP Version
-        run: |
-          sed -i 's/agp = "9.2.1"/agp = "8.13.2"/' gradle/libs.versions.toml
-
       - name: Build Debug APK
         run: ./gradlew assembleDebug
 
