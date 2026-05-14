@@ -73,9 +73,10 @@ fun AuraNavHost(
                 }
             )
         ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getLong("noteId") ?: -1L
+            val noteIdArg = backStackEntry.arguments?.getLong("noteId") ?: -1L
+            val noteId = if (noteIdArg == -1L) null else noteIdArg
             AddEditScreen(
-                noteId = if (noteId == -1L) null else noteId,
+                noteId = noteId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -90,8 +91,8 @@ fun AuraNavHost(
             DetailScreen(
                 noteId = noteId,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToEdit = { navController.navigate(Screen.AddEdit.createRoute(noteId)) },
-                onNavigateToLocked = { navController.navigate(Screen.Locked.createRoute(noteId)) }
+                onNavigateToEdit = { id -> navController.navigate(Screen.AddEdit.createRoute(id)) },
+                onNavigateToLocked = { id -> navController.navigate(Screen.Locked.createRoute(id)) }
             )
         }
 
