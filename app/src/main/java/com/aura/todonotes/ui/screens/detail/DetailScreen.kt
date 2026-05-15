@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.PushPinOutlined
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -62,14 +61,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private fun parseColorSafe(colorHex: String?, fallback: Color): Color {
-    return try {
-        colorHex?.let { Color(android.graphics.Color.parseColor(it)) } ?: fallback
-    } catch (e: Exception) {
-        fallback
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
@@ -88,9 +79,13 @@ fun DetailScreen(
     }
 
     val note = uiState.note
-    
     val backgroundColor = remember(note?.colorHex) {
-        parseColorSafe(note?.colorHex, MaterialTheme.colorScheme.surface)
+        try {
+            note?.colorHex?.let { Color(android.graphics.Color.parseColor(it)) }
+                ?: MaterialTheme.colorScheme.surface
+        } catch (e: Exception) {
+            MaterialTheme.colorScheme.surface
+        }
     }
 
     val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
@@ -122,7 +117,7 @@ fun DetailScreen(
                     note?.let { n ->
                         IconButton(onClick = { viewModel.togglePin() }) {
                             Icon(
-                                imageVector = if (n.isPinned) Icons.Default.PushPin else Icons.Default.PushPinOutlined,
+                                imageVector = Icons.Default.PushPin,
                                 contentDescription = "Pin",
                                 tint = if (n.isPinned) MaterialTheme.colorScheme.primary else textColor,
                                 modifier = Modifier.scale(pinScale)
@@ -155,15 +150,12 @@ fun DetailScreen(
         },
         containerColor = backgroundColor
     ) { paddingValues ->
-        val topPadding = paddingValues.calculateTopPadding()
-        val bottomPadding = paddingValues.calculateBottomPadding()
-
         when {
             uiState.isLoading -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = topPadding),
+                        .padding(paddingValues),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -174,7 +166,7 @@ fun DetailScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = topPadding),
+                        .padding(paddingValues),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -185,7 +177,7 @@ fun DetailScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = topPadding, bottom = bottomPadding)
+                        .padding(paddingValues)
                         .padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
