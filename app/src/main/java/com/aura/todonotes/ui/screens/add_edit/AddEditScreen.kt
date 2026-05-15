@@ -48,6 +48,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +58,14 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+
+private fun parseColorHex(colorHex: String): Color {
+    return try {
+        Color(android.graphics.Color.parseColor(colorHex))
+    } catch (e: Exception) {
+        Color.Unspecified
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,11 +84,8 @@ fun AddEditScreen(
         }
     }
 
-    val backgroundColor = try {
-        Color(android.graphics.Color.parseColor(uiState.colorHex))
-    } catch (e: Exception) {
-        MaterialTheme.colorScheme.surface
-    }
+    val parsedColor = remember(uiState.colorHex) { parseColorHex(uiState.colorHex) }
+    val backgroundColor = if (parsedColor != Color.Unspecified) parsedColor else MaterialTheme.colorScheme.surface
 
     val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
     val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
@@ -367,11 +373,8 @@ private fun ColorPickerRow(
                 "#FF66BB6A", "#FF42A5F5", "#FF26C6DA", "#FFF06292"
             )
             colors.forEach { colorHex ->
-                val color = try {
-                    Color(android.graphics.Color.parseColor(colorHex))
-                } catch (e: Exception) {
-                    Color.White
-                }
+                val parsedItemColor = remember(colorHex) { parseColorHex(colorHex) }
+                val color = if (parsedItemColor != Color.Unspecified) parsedItemColor else Color.White
                 val isSelected = colorHex == selectedColor
                 val scale by animateFloatAsState(
                     targetValue = if (isSelected) 1.2f else 1f,
