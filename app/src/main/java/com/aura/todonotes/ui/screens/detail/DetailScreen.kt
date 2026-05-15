@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +31,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,18 +58,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aura.todonotes.domain.model.Task
+import com.aura.todonotes.ui.components.AuraLoadingIndicator
 import com.aura.todonotes.ui.components.ConfirmDialog
+import com.aura.todonotes.ui.theme.isColorDark
+import com.aura.todonotes.ui.theme.parseColorHex
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-private fun parseColorHex(colorHex: String?): Color {
-    return try {
-        colorHex?.let { Color(android.graphics.Color.parseColor(it)) } ?: Color.Unspecified
-    } catch (e: Exception) {
-        Color.Unspecified
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,179 +79,96 @@ fun DetailScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(noteId) {
-        viewModel.loadNote(noteId)
-    }
+    LaunchedEffect(noteId) { viewModel.loadNote(noteId) }
 
     val note = uiState.note
-    val parsedColor = remember(note?.colorHex) { parseColorHex(note?.colorHex) }
-    val backgroundColor = if (parsedColor != Color.Unspecified) parsedColor else MaterialTheme.colorScheme.surface
+    val bgColor = parseColorHex(note?.colorHex).let { if (it != Color.Unspecified) it else MaterialTheme.colorScheme.surface }
+    val isDark = isColorDark(bgColor)
+    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtleColor = if (isDark) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
 
-    val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
-    val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
-
-    val isPinned = note?.isPinned ?: false
     val pinScale by animateFloatAsState(
-        targetValue = if (isPinned) 1.2f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        if (note?.isPinned == true) 1.2f else 1f,
+        spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
         label = "pin_scale"
     )
 
-    LaunchedEffect(uiState.isDeleted) {
-        if (uiState.isDeleted) {
-            onNavigateBack()
-        }
-    }
+    LaunchedEffect(uiState.isDeleted) { if (uiState.isDeleted) onNavigateBack() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor)
-                    }
-                },
+                title = {},
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor) } },
                 actions = {
                     note?.let { n ->
                         IconButton(onClick = { viewModel.togglePin() }) {
-                            Icon(
-                                imageVector = Icons.Default.PushPin,
-                                contentDescription = "Pin",
-                                tint = if (n.isPinned) MaterialTheme.colorScheme.primary else textColor,
-                                modifier = Modifier.scale(pinScale)
-                            )
+                            Icon(Icons.Default.PushPin, "Pin", tint = if (n.isPinned) MaterialTheme.colorScheme.primary else textColor, modifier = Modifier.scale(pinScale))
                         }
-                        IconButton(onClick = { onNavigateToEdit(n.id) }) {
-                            Icon(Icons.Default.Edit, "Edit", tint = textColor)
-                        }
+                        IconButton(onClick = { onNavigateToEdit(n.id) }) { Icon(Icons.Default.Edit, "Edit", tint = textColor) }
                         Box {
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, "More", tint = textColor)
-                            }
-                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                                DropdownMenuItem(
-                                    text = { Text("Archive") },
-                                    onClick = { viewModel.toggleArchive(); showMenu = false },
-                                    leadingIcon = { Icon(Icons.Default.Archive, null) }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Delete") },
-                                    onClick = { showDeleteDialog = true; showMenu = false },
-                                    leadingIcon = { Icon(Icons.Default.Delete, null) }
-                                )
+                            IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.MoreVert, "More", tint = textColor) }
+                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, shape = RoundedCornerShape(16.dp)) {
+                                DropdownMenuItem(text = { Text("Archive") }, onClick = { viewModel.toggleArchive(); showMenu = false }, leadingIcon = { Icon(Icons.Default.Archive, null) })
+                                DropdownMenuItem(text = { Text("Share") }, onClick = { showMenu = false }, leadingIcon = { Icon(Icons.Default.Share, null) })
+                                DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) }, onClick = { showDeleteDialog = true; showMenu = false }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) })
                             }
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = bgColor)
             )
         },
-        containerColor = backgroundColor
-    ) { paddingValues ->
+        containerColor = bgColor
+    ) { padding ->
         when {
-            uiState.isLoading -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            note == null -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text("Note not found", style = MaterialTheme.typography.bodyLarge)
-                }
-            }
+            uiState.isLoading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { AuraLoadingIndicator() }
+            note == null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("Note not found", style = MaterialTheme.typography.bodyLarge, color = textColor) }
             else -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 20.dp),
+                    Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    item { Spacer(modifier = Modifier.height(8.dp)) }
+                    item { Spacer(Modifier.height(8.dp)) }
 
                     if (note.isLocked) {
                         item {
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(textColor.copy(alpha = 0.1f))
-                                    .padding(12.dp)
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(textColor.copy(alpha = 0.1f)).padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Lock, "Locked", tint = textColor, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("This note is locked", style = MaterialTheme.typography.bodySmall, color = textColor)
+                                Icon(Icons.Default.Lock, null, tint = textColor, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("This note is locked", color = textColor, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
 
                     if (note.title.isNotEmpty()) {
-                        item {
-                            Text(
-                                note.title,
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = textColor
-                            )
-                        }
+                        item { Text(note.title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = textColor) }
                     }
-
                     if (note.content.isNotEmpty()) {
-                        item {
-                            Text(
-                                note.content,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = subtleColor
-                            )
-                        }
+                        item { Text(note.content, style = MaterialTheme.typography.bodyLarge, color = subtleColor) }
                     }
 
                     if (uiState.tasks.isNotEmpty()) {
                         item {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                                Text("Tasks", style = MaterialTheme.typography.titleMedium, color = textColor)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                val completed = uiState.tasks.count { it.isCompleted }
-                                Text(
-                                    "($completed/${uiState.tasks.size})",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = subtleColor
-                                )
+                                Text("Tasks", style = MaterialTheme.typography.titleMedium, color = textColor, fontWeight = FontWeight.SemiBold)
+                                Spacer(Modifier.width(8.dp))
+                                Text("(${uiState.tasks.count { it.isCompleted }}/${uiState.tasks.size})", style = MaterialTheme.typography.bodySmall, color = subtleColor)
                             }
                         }
                         items(uiState.tasks, key = { it.id }) { task ->
-                            TaskRow(
-                                task = task,
-                                onToggle = { viewModel.toggleTask(task.id) },
-                                textColor = textColor,
-                                subtleColor = subtleColor
-                            )
+                            TaskRow(task = task, textColor = textColor, subtleColor = subtleColor, onToggle = { viewModel.toggleTask(task.id) })
                         }
                     }
 
                     item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "Last updated: ${formatDate(note.updatedAt)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = subtleColor.copy(alpha = 0.7f)
-                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(formatDate(note.updatedAt), style = MaterialTheme.typography.labelMedium, color = subtleColor.copy(alpha = 0.7f))
                     }
-                    item { Spacer(modifier = Modifier.height(100.dp)) }
+                    item { Spacer(Modifier.height(100.dp)) }
                 }
             }
         }
@@ -273,42 +187,20 @@ fun DetailScreen(
 }
 
 @Composable
-private fun TaskRow(
-    task: Task,
-    onToggle: () -> Unit,
-    textColor: Color,
-    subtleColor: Color
-) {
+private fun TaskRow(task: Task, textColor: Color, subtleColor: Color, onToggle: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (task.isCompleted) subtleColor.copy(alpha = 0.1f) else Color.Transparent)
-            .clickable(onClick = onToggle)
-            .padding(12.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (task.isCompleted) subtleColor.copy(alpha = 0.1f) else Color.Transparent).clickable(onClick = onToggle).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-            contentDescription = if (task.isCompleted) "Completed" else "Not completed",
-            tint = if (task.isCompleted) Color(0xFF4CAF50) else subtleColor,
+            if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+            null,
+            tint = if (task.isCompleted) Color(0xFF22C55E) else subtleColor,
             modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = task.content,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (task.isCompleted) textColor.copy(alpha = 0.5f) else textColor,
-            modifier = Modifier.weight(1f)
-        )
+        Spacer(Modifier.width(12.dp))
+        Text(task.content, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (task.isCompleted) textColor.copy(alpha = 0.5f) else textColor, modifier = Modifier.weight(1f))
     }
 }
 
-private fun isColorDark(color: Color): Boolean {
-    val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
-    return luminance < 0.5
-}
-
-private fun formatDate(timestamp: Long): String {
-    return SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault()).format(Date(timestamp))
-}
+private fun formatDate(timestamp: Long): String = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault()).format(Date(timestamp))

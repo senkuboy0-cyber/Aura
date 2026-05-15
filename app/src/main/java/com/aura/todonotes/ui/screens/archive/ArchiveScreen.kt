@@ -1,6 +1,7 @@
 package com.aura.todonotes.ui.screens.archive
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Unarchive
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aura.todonotes.ui.components.AuraLoadingIndicator
 import com.aura.todonotes.ui.components.EmptyState
 import com.aura.todonotes.ui.components.NoteCard
 
@@ -40,46 +41,22 @@ fun ArchiveScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Archive") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                }
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }
             )
         }
     ) { padding ->
         if (uiState.isLoading) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { AuraLoadingIndicator() }
         } else if (uiState.notes.isEmpty()) {
-            EmptyState(
-                icon = Icons.Default.Unarchive,
-                title = "Archive is Empty",
-                description = "Archived notes will appear here"
-            )
+            EmptyState(icon = Icons.Default.Unarchive, title = "Archive is Empty", description = "Notes you archive will appear here")
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(
-                    items = uiState.notes,
-                    key = { it.id }
-                ) { note ->
-                    NoteCard(
-                        note = note,
-                        onClick = { onNavigateToDetail(note.id) }
-                    )
+                items(uiState.notes, key = { it.id }) { note ->
+                    NoteCard(note = note, onClick = { onNavigateToDetail(note.id) })
                 }
             }
         }

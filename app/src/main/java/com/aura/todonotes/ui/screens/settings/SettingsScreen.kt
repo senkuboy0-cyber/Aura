@@ -6,6 +6,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +48,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,46 +72,25 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "Settings",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                title = { Text("Settings", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
-            // Appearance Section
-            SettingsSection(title = "Appearance") {
-                ThemeSelector(
-                    currentTheme = uiState.settings.themeMode,
-                    onThemeSelected = { viewModel.setThemeMode(it) }
-                )
+            SettingsSection("Appearance") {
+                ThemeSelector(currentTheme = uiState.settings.themeMode, onThemeSelected = { viewModel.setThemeMode(it) })
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // Security Section
-            SettingsSection(title = "Security") {
+            SettingsSection("Security") {
                 SettingsSwitchItem(
                     icon = Icons.Default.Lock,
                     title = "Note Lock",
@@ -116,7 +98,6 @@ fun SettingsScreen(
                     checked = uiState.settings.noteLockEnabled,
                     onCheckedChange = { viewModel.setNoteLockEnabled(it) }
                 )
-
                 if (uiState.settings.noteLockEnabled) {
                     SettingsItem(
                         icon = Icons.Default.Security,
@@ -127,254 +108,84 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // About Section
-            SettingsSection(title = "About") {
-                SettingsItem(
-                    icon = Icons.Default.Info,
-                    title = "App Version",
-                    subtitle = "1.0.0",
-                    onClick = { }
-                )
+            SettingsSection("About") {
+                SettingsItem(icon = Icons.Default.Info, title = "App Version", subtitle = "v1.0.0", onClick = {})
             }
 
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-private fun SettingsSection(
-    title: String,
-    content: @Composable () -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(vertical = 12.dp)
-        )
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
+private fun SettingsSection(title: String, content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 12.dp))
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
             content()
         }
     }
 }
 
 @Composable
-private fun ThemeSelector(
-    currentTheme: ThemeOption,
-    onThemeSelected: (ThemeOption) -> Unit
-) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = "Theme",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+private fun ThemeSelector(currentTheme: ThemeOption, onThemeSelected: (ThemeOption) -> Unit) {
+    Column(Modifier.padding(16.dp)) {
+        Text("Theme", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 16.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ThemeOption.entries.forEach { theme ->
-                ThemeCard(
-                    theme = theme,
-                    isSelected = currentTheme == theme,
-                    onClick = { onThemeSelected(theme) },
-                    modifier = Modifier.weight(1f)
-                )
+                ThemeCard(theme = theme, isSelected = currentTheme == theme, onClick = { onThemeSelected(theme) }, modifier = Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun ThemeCard(
-    theme: ThemeOption,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.05f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "theme_scale"
-    )
-
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                     else MaterialTheme.colorScheme.surface,
-        label = "theme_bg"
-    )
+private fun ThemeCard(theme: ThemeOption, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val scale by animateFloatAsState(if (isSelected) 1.05f else 1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium), label = "theme_scale")
+    val bg by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface, label = "theme_bg")
 
     Column(
-        modifier = modifier
-            .scale(scale)
-            .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(16.dp),
+        modifier.scale(scale).clip(RoundedCornerShape(16.dp)).background(bg).clickable(onClick = onClick).padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(
-                    when (theme) {
-                        ThemeOption.SYSTEM -> MaterialTheme.colorScheme.surfaceVariant
-                        ThemeOption.DARK -> Color(0xFF1C1B1F)
-                        ThemeOption.LIGHT -> Color(0xFFFFFBFE)
-                    }
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = when (theme) {
-                    ThemeOption.SYSTEM -> Icons.Default.Smartphone
-                    ThemeOption.DARK -> Icons.Default.DarkMode
-                    ThemeOption.LIGHT -> Icons.Default.LightMode
-                },
-                contentDescription = null,
-                tint = when (theme) {
-                    ThemeOption.SYSTEM -> MaterialTheme.colorScheme.onSurfaceVariant
-                    ThemeOption.DARK -> Color.White
-                    ThemeOption.LIGHT -> Color.Black
-                },
-                modifier = Modifier.size(24.dp)
-            )
+        Box(Modifier.size(48.dp).clip(CircleShape).background(when (theme) { ThemeOption.SYSTEM -> MaterialTheme.colorScheme.surfaceVariant; ThemeOption.DARK -> Color(0xFF1C1B1F); ThemeOption.LIGHT -> Color(0xFFFFFBFE) }), contentAlignment = Alignment.Center) {
+            Icon(when (theme) { ThemeOption.SYSTEM -> Icons.Default.Smartphone; ThemeOption.DARK -> Icons.Default.DarkMode; ThemeOption.LIGHT -> Icons.Default.LightMode }, null, tint = when (theme) { ThemeOption.SYSTEM -> MaterialTheme.colorScheme.onSurfaceVariant; ThemeOption.DARK -> Color.White; ThemeOption.LIGHT -> Color.Black }, modifier = Modifier.size(24.dp))
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = when (theme) {
-                ThemeOption.SYSTEM -> "System"
-                ThemeOption.DARK -> "Dark"
-                ThemeOption.LIGHT -> "Light"
-            },
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-        )
-        if (isSelected) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = "Selected",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp)
-            )
-        }
+        Spacer(Modifier.height(8.dp))
+        Text(when (theme) { ThemeOption.SYSTEM -> "System"; ThemeOption.DARK -> "Dark"; ThemeOption.LIGHT -> "Light" }, style = MaterialTheme.typography.labelMedium, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+        if (isSelected) { Spacer(Modifier.height(4.dp)); Icon(Icons.Default.Check, "Selected", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp)) }
     }
 }
 
 @Composable
-private fun SettingsItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(20.dp)
-            )
+private fun SettingsItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    Row(Modifier.fillMaxWidth().clickable(interaction, null, onClick).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
         }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
-private fun SettingsSwitchItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(20.dp)
-            )
+private fun SettingsSwitchItem(icon: ImageVector, title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
         }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary, checkedTrackColor = MaterialTheme.colorScheme.primaryContainer))
     }
 }

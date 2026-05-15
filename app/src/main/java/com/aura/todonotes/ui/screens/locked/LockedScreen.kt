@@ -1,5 +1,8 @@
 package com.aura.todonotes.ui.screens.locked
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,8 +26,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aura.todonotes.ui.components.AuraLoadingIndicator
 import com.aura.todonotes.ui.components.PinInput
 import com.aura.todonotes.ui.components.PinKeyboard
 
@@ -39,65 +44,46 @@ fun LockedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState.isUnlocked) {
-        if (uiState.isUnlocked) {
-            onUnlocked()
-        }
-    }
+    LaunchedEffect(uiState.isUnlocked) { if (uiState.isUnlocked) onUnlocked() }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Locked Note") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                }
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }
             )
         }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
+            Modifier.fillMaxSize().padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(64.dp)
+            val iconScale by animateFloatAsState(
+                targetValue = 1f,
+                animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow),
+                label = "lock_icon_scale"
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(72.dp).scale(iconScale))
 
-            Text(
-                text = "Enter PIN to unlock",
-                style = MaterialTheme.typography.titleLarge
-            )
+            Spacer(Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Text("Enter PIN to Unlock", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
 
-            PinInput(
-                pin = uiState.pin,
-                onPinChange = { }
-            )
+            Spacer(Modifier.height(32.dp))
+
+            PinInput(pin = uiState.pin, onPinChange = {}, isError = uiState.error != null)
 
             if (uiState.error != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = uiState.error!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+                Spacer(Modifier.height(16.dp))
+                Text(uiState.error!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(Modifier.height(40.dp))
 
             if (uiState.isVerifying) {
-                CircularProgressIndicator()
+                AuraLoadingIndicator()
             } else {
                 PinKeyboard(
                     onNumberClick = { viewModel.onNumberClick(it) },

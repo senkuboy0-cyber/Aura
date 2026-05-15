@@ -1,16 +1,21 @@
 package com.aura.todonotes.ui.screens.pin
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +30,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -40,55 +47,46 @@ fun PinSetupScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState.isComplete) {
-        if (uiState.isComplete) {
-            onPinSet()
-        }
-    }
+    LaunchedEffect(uiState.isComplete) { if (uiState.isComplete) onPinSet() }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Set PIN") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                }
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }
             )
         }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .statusBarsPadding(),
+            Modifier.fillMaxSize().padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 24.dp)
+            val iconScale by animateFloatAsState(
+                targetValue = 1f,
+                animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow),
+                label = "lock_icon"
             )
 
+            Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(64.dp).scale(iconScale).padding(bottom = 24.dp))
+
             Text(
-                text = when {
+                when {
                     uiState.hasExistingPin -> "Change PIN"
                     uiState.isConfirming -> "Confirm PIN"
-                    else -> "Enter a 4-digit PIN"
+                    else -> "Create a 4-digit PIN"
                 },
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
-                text = when {
-                    uiState.hasExistingPin -> "Enter your new PIN"
-                    uiState.isConfirming -> "Enter PIN again to confirm"
-                    else -> "This PIN will be used to lock notes"
+                when {
+                    uiState.hasExistingPin -> "Enter your new 4-digit PIN"
+                    uiState.isConfirming -> "Enter the PIN again to confirm"
+                    else -> "This PIN protects your locked notes"
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -96,23 +94,20 @@ fun PinSetupScreen(
                 modifier = Modifier.padding(horizontal = 32.dp)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(40.dp))
 
             PinInput(
                 pin = if (uiState.isConfirming) uiState.confirmPin else uiState.pin,
-                onPinChange = { }
+                onPinChange = {},
+                isError = uiState.error != null
             )
 
             if (uiState.error != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = uiState.error!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+                Spacer(Modifier.height(16.dp))
+                Text(uiState.error!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(Modifier.height(40.dp))
 
             PinKeyboard(
                 onNumberClick = { viewModel.onNumberClick(it) },
@@ -121,23 +116,21 @@ fun PinSetupScreen(
                 modifier = Modifier.padding(horizontal = 32.dp)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            if (uiState.isConfirming && uiState.confirmPin.length == 4) {
-                // PIN confirmed automatically
-            } else if (!uiState.isConfirming && uiState.pin.length == 4) {
-                TextButton(onClick = { viewModel.proceedToConfirm() }) {
-                    Text("Continue")
+            if (!uiState.isConfirming && uiState.pin.length == 4) {
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = { viewModel.proceedToConfirm() },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                ) {
+                    Text("Continue", fontWeight = FontWeight.Medium)
                 }
             }
 
             if (uiState.hasExistingPin) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
                 TextButton(onClick = { viewModel.removePin() }) {
-                    Text(
-                        text = "Remove PIN",
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Text("Remove PIN", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Medium)
                 }
             }
         }

@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,8 +36,6 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,19 +55,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aura.todonotes.ui.components.ColorPicker
+import com.aura.todonotes.ui.theme.isColorDark
+import com.aura.todonotes.ui.theme.parseColorHex
 
-private fun parseColorHex(colorHex: String): Color {
-    return try {
-        Color(android.graphics.Color.parseColor(colorHex))
-    } catch (e: Exception) {
-        Color.Unspecified
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditScreen(
     noteId: Long?,
@@ -84,28 +80,31 @@ fun AddEditScreen(
         }
     }
 
-    val parsedColor = remember(uiState.colorHex) { parseColorHex(uiState.colorHex) }
-    val backgroundColor = if (parsedColor != Color.Unspecified) parsedColor else MaterialTheme.colorScheme.surface
+    val bgColor = parseColorHex(uiState.colorHex).let {
+        if (it != Color.Unspecified) it else MaterialTheme.colorScheme.surface
+    }
+    val isDark = isColorDark(bgColor)
+    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtleColor = if (isDark) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
 
-    val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
-    val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
-
-    val pinScale by animateFloatAsState(
-        targetValue = if (uiState.isPinned) 1.2f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "pin_scale"
-    )
-
+    val fabInteraction = remember { MutableInteractionSource() }
+    val fabPressed by fabInteraction.collectIsPressedAsState()
     val fabScale by animateFloatAsState(
-        targetValue = if (uiState.isSaving) 0.9f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        targetValue = if (fabPressed) 0.92f else 1f,
+        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
         label = "fab_scale"
     )
 
+    val pinInteraction = remember { MutableInteractionSource() }
+    val pinPressed by pinInteraction.collectIsPressedAsState()
+    val pinRotation by animateFloatAsState(
+        targetValue = if (uiState.isPinned) 45f else 0f,
+        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
+        label = "pin_rotation"
+    )
+
     LaunchedEffect(uiState.saveComplete) {
-        if (uiState.saveComplete) {
-            onNavigateBack()
-        }
+        if (uiState.saveComplete) onNavigateBack()
     }
 
     Scaffold(
@@ -113,61 +112,52 @@ fun AddEditScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (uiState.isEditMode) "Edit Note" else "New Note",
+                        if (uiState.isEditMode) "Edit Note" else "New Note",
                         color = textColor,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = textColor
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor)
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.togglePin() }) {
                         Icon(
-                            imageVector = Icons.Default.PushPin,
-                            contentDescription = "Pin",
+                            Icons.Default.PushPin,
+                            "Pin",
                             tint = if (uiState.isPinned) MaterialTheme.colorScheme.primary else textColor,
-                            modifier = Modifier.scale(pinScale)
+                            modifier = Modifier.rotate(pinRotation)
                         )
                     }
-
                     IconButton(onClick = { viewModel.toggleLock() }) {
                         Icon(
-                            imageVector = if (uiState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                            contentDescription = "Lock",
+                            if (uiState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            "Lock",
                             tint = if (uiState.isLocked) MaterialTheme.colorScheme.primary else textColor
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = bgColor)
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.saveNote() },
                 containerColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .scale(fabScale)
-                    .navigationBarsPadding()
+                modifier = Modifier.scale(fabScale).navigationBarsPadding(),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 if (uiState.isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
+                    com.aura.todonotes.ui.components.AuraLoadingIndicator(size = 24)
                 } else {
                     Icon(Icons.Default.Check, "Save", tint = Color.White)
                 }
             }
         },
-        containerColor = backgroundColor
+        containerColor = bgColor
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -178,129 +168,87 @@ fun AddEditScreen(
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { Spacer(Modifier.height(8.dp)) }
 
+            // Title
             item {
                 BasicTextField(
                     value = uiState.title,
                     onValueChange = { viewModel.updateTitle(it) },
-                    textStyle = MaterialTheme.typography.headlineSmall.copy(color = textColor),
+                    textStyle = MaterialTheme.typography.headlineSmall.copy(
+                        color = textColor,
+                        fontWeight = FontWeight.SemiBold
+                    ),
                     cursorBrush = SolidColor(textColor),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    decorationBox = { innerTextField ->
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    decorationBox = { inner ->
                         Box {
-                            if (uiState.title.isEmpty()) {
-                                Text(
-                                    text = "Title",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = subtleColor
-                                )
-                            }
-                            innerTextField()
+                            if (uiState.title.isEmpty()) Text("Title", style = MaterialTheme.typography.headlineSmall, color = subtleColor, fontWeight = FontWeight.SemiBold)
+                            inner()
                         }
                     }
                 )
             }
 
+            // Content
             item {
                 BasicTextField(
                     value = uiState.content,
                     onValueChange = { viewModel.updateContent(it) },
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = textColor.copy(alpha = 0.9f)),
                     cursorBrush = SolidColor(textColor),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .padding(vertical = 8.dp),
-                    decorationBox = { innerTextField ->
+                    modifier = Modifier.fillMaxWidth().height(200.dp).padding(vertical = 8.dp),
+                    decorationBox = { inner ->
                         Box {
-                            if (uiState.content.isEmpty()) {
-                                Text(
-                                    text = "Write your note...",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = subtleColor
-                                )
-                            }
-                            innerTextField()
+                            if (uiState.content.isEmpty()) Text("Write your note...", style = MaterialTheme.typography.bodyLarge, color = subtleColor)
+                            inner()
                         }
                     }
                 )
             }
 
+            // Tasks
             if (uiState.tasks.isNotEmpty()) {
                 item {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 16.dp)
-                    ) {
-                        Text(
-                            text = "Tasks",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = textColor
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "(${uiState.tasks.count { it.isCompleted }}/${uiState.tasks.size})",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = subtleColor
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 16.dp)) {
+                        Text("Tasks", style = MaterialTheme.typography.titleMedium, color = textColor, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.width(8.dp))
+                        Text("(${uiState.tasks.count { it.isCompleted }}/${uiState.tasks.size})", style = MaterialTheme.typography.bodySmall, color = subtleColor)
                     }
                 }
-
-                itemsIndexed(
-                    items = uiState.tasks,
-                    key = { _, task -> task.id }
-                ) { index, task ->
+                itemsIndexed(uiState.tasks, key = { _, t -> t.id }) { index, task ->
+                    val taskInteraction = remember { MutableInteractionSource() }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(if (task.isCompleted) subtleColor.copy(alpha = 0.1f) else Color.Transparent)
-                            .clickable(onClick = { viewModel.toggleTask(index) })
+                            .clickable(interactionSource = taskInteraction, indication = null) { viewModel.toggleTask(index) }
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                            contentDescription = if (task.isCompleted) "Completed" else "Not completed",
-                            tint = if (task.isCompleted) Color(0xFF4CAF50) else subtleColor,
+                            if (task.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                            contentDescription = null,
+                            tint = if (task.isCompleted) Color(0xFF22C55E) else subtleColor,
                             modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = task.content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (task.isCompleted) textColor.copy(alpha = 0.5f) else textColor,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(task.content, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (task.isCompleted) textColor.copy(alpha = 0.5f) else textColor, modifier = Modifier.weight(1f))
                     }
                 }
             }
 
+            // Add Task
             item {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(subtleColor.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            tint = subtleColor,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    Box(Modifier.size(26.dp).clip(CircleShape).background(subtleColor.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Add, null, tint = subtleColor, modifier = Modifier.size(16.dp))
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(Modifier.width(12.dp))
                     BasicTextField(
                         value = uiState.newTaskContent,
                         onValueChange = { viewModel.updateNewTaskContent(it) },
@@ -309,31 +257,20 @@ fun AddEditScreen(
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { viewModel.addTask() }),
-                        decorationBox = { innerTextField ->
+                        decorationBox = { inner ->
                             Box {
-                                if (uiState.newTaskContent.isEmpty()) {
-                                    Text(
-                                        text = "Add a task...",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = subtleColor
-                                    )
-                                }
-                                innerTextField()
+                                if (uiState.newTaskContent.isEmpty()) Text("Add a task...", style = MaterialTheme.typography.bodyMedium, color = subtleColor)
+                                inner()
                             }
                         }
                     )
                     if (uiState.newTaskContent.isNotBlank()) {
-                        IconButton(onClick = { viewModel.addTask() }) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add Task",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        IconButton(onClick = { viewModel.addTask() }) { Icon(Icons.Default.Add, "Add", tint = MaterialTheme.colorScheme.primary) }
                     }
                 }
             }
 
+            // Color Picker
             item {
                 ColorPickerRow(
                     selectedColor = uiState.colorHex,
@@ -343,7 +280,7 @@ fun AddEditScreen(
                 )
             }
 
-            item { Spacer(modifier = Modifier.height(100.dp)) }
+            item { Spacer(Modifier.height(100.dp)) }
         }
     }
 }
@@ -355,47 +292,20 @@ private fun ColorPickerRow(
     textColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
-        Text(
-            text = "Color",
-            style = MaterialTheme.typography.labelMedium,
-            color = textColor.copy(alpha = 0.6f),
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+    Column(modifier) {
+        Text("Color", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = textColor.copy(alpha = 0.6f), modifier = Modifier.padding(bottom = 12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             val colors = listOf(
-                "#FFFFFFFF", "#FFFFEB3B", "#FFFF9800", "#FFFF5722",
-                "#FFEF5350", "#FFBA68C8", "#FF7986CB", "#FF4DB6AC",
-                "#FF66BB6A", "#FF42A5F5", "#FF26C6DA", "#FFF06292"
+                "#FFFFFFFF", "#FFFDE047", "#FFFB923C", "#FFF97316",
+                "#FFEF4444", "#FFF472B6", "#FFC084FC", "#FF818CF8",
+                "#FF60A5FA", "#FF22D3EE", "#FF2DD4BF", "#FF4ADE80", "#FFA3E635", "#FFFACC15"
             )
-            colors.forEach { colorHex ->
-                val parsedItemColor = remember(colorHex) { parseColorHex(colorHex) }
-                val color = if (parsedItemColor != Color.Unspecified) parsedItemColor else Color.White
-                val isSelected = colorHex == selectedColor
-                val scale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.2f else 1f,
-                    animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                    label = "color_scale_$colorHex"
-                )
-
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .scale(scale)
-                        .clip(CircleShape)
-                        .background(color)
-                        .clickable(onClick = { onColorSelected(colorHex) })
-                )
+            colors.forEach { hex ->
+                val c = parseColorHex(hex).let { if (it != Color.Unspecified) it else Color.White }
+                val isSel = hex == selectedColor
+                val s by animateFloatAsState(if (isSel) 1.15f else 1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium), label = "cs_$hex")
+                Box(Modifier.size(34.dp).scale(s).clip(CircleShape).background(c).clickable { onColorSelected(hex) })
             }
         }
     }
-}
-
-private fun isColorDark(color: Color): Boolean {
-    val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
-    return luminance < 0.5
 }
