@@ -61,6 +61,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private fun parseColorHex(colorHex: String?): Color {
+    return try {
+        colorHex?.let { Color(android.graphics.Color.parseColor(it)) } ?: Color.Unspecified
+    } catch (e: Exception) {
+        Color.Unspecified
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
@@ -79,14 +87,8 @@ fun DetailScreen(
     }
 
     val note = uiState.note
-    val backgroundColor = remember(note?.colorHex) {
-        try {
-            note?.colorHex?.let { Color(android.graphics.Color.parseColor(it)) }
-                ?: MaterialTheme.colorScheme.surface
-        } catch (e: Exception) {
-            MaterialTheme.colorScheme.surface
-        }
-    }
+    val parsedColor = remember(note?.colorHex) { parseColorHex(note?.colorHex) }
+    val backgroundColor = if (parsedColor != Color.Unspecified) parsedColor else MaterialTheme.colorScheme.surface
 
     val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
     val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
