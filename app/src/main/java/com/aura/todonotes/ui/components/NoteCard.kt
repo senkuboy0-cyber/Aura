@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -27,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aura.todonotes.domain.model.Note
+import com.aura.todonotes.ui.theme.isColorDark
+import com.aura.todonotes.ui.theme.parseColorHex
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -46,36 +52,50 @@ fun NoteCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
     val scale by animateFloatAsState(
-        targetValue = 1f,
+        targetValue = if (isPressed) 0.97f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
+            stiffness = Spring.StiffnessMedium
         ),
-        label = "note_card_scale"
+        label = "note_card_press"
     )
 
-    val backgroundColor = try {
-        Color(android.graphics.Color.parseColor(note.colorHex))
-    } catch (e: Exception) {
-        MaterialTheme.colorScheme.surface
-    }
+    val elevation by animateFloatAsState(
+        targetValue = if (isPressed) 2f else 6f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "note_card_elevation"
+    )
 
-    val textColor = if (isColorDark(backgroundColor)) Color.White else MaterialTheme.colorScheme.onSurface
-    val subtleColor = if (isColorDark(backgroundColor)) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val backgroundColor = parseColorHex(note.colorHex).let {
+        if (it != Color.Unspecified) it else MaterialTheme.colorScheme.surface
+    }
+    val isDark = isColorDark(backgroundColor)
+    val textColor = if (isDark) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtleColor = if (isDark) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Top Row - Indicators
-            if (note.isPinned || note.isLocked) {
+            if (note.isPinned || note.isLocked || note.hasReminder) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -83,9 +103,9 @@ fun NoteCard(
                     if (note.isPinned) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
+                                .size(26.dp)
                                 .clip(CircleShape)
-                                .background(textColor.copy(alpha = 0.2f)),
+                                .background(textColor.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -95,14 +115,14 @@ fun NoteCard(
                                 modifier = Modifier.size(14.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                     }
                     if (note.isLocked) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
+                                .size(26.dp)
                                 .clip(CircleShape)
-                                .background(textColor.copy(alpha = 0.2f)),
+                                .background(textColor.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -113,8 +133,25 @@ fun NoteCard(
                             )
                         }
                     }
+                    if (note.hasReminder) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clip(CircleShape)
+                                .background(textColor.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Reminder",
+                                tint = textColor,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
             }
 
             // Title
@@ -130,7 +167,7 @@ fun NoteCard(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Content
+            // Content Preview
             if (note.content.isNotEmpty()) {
                 Text(
                     text = note.content,
@@ -141,7 +178,7 @@ fun NoteCard(
                 )
             }
 
-            // Tasks Progress
+            // Tasks Progress Bar
             if (note.tasks.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 val completedTasks = note.tasks.count { it.isCompleted }
@@ -152,17 +189,17 @@ fun NoteCard(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(textColor.copy(alpha = 0.2f))
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(textColor.copy(alpha = 0.15f))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(progress)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
                                 .background(
-                                    if (completedTasks == totalTasks) Color(0xFF4CAF50)
+                                    if (completedTasks == totalTasks) Color(0xFF22C55E)
                                     else MaterialTheme.colorScheme.primary
                                 )
                         )
@@ -171,6 +208,7 @@ fun NoteCard(
                     Text(
                         text = "$completedTasks/$totalTasks",
                         style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
                         color = subtleColor
                     )
                 }
@@ -178,19 +216,28 @@ fun NoteCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Date
-            Text(
-                text = formatRelativeDate(note.updatedAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = subtleColor.copy(alpha = 0.7f)
-            )
+            // Date + Tags Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formatRelativeDate(note.updatedAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = subtleColor.copy(alpha = 0.7f)
+                )
+                if (note.tags.isNotEmpty()) {
+                    Text(
+                        text = "+${note.tags.size}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
     }
-}
-
-private fun isColorDark(color: Color): Boolean {
-    val luminance = 0.299 * color.red + 0.587 * color.green + 0.114 * color.blue
-    return luminance < 0.5
 }
 
 private fun formatRelativeDate(timestamp: Long): String {
@@ -203,7 +250,7 @@ private fun formatRelativeDate(timestamp: Long): String {
         diff < 86400_000 -> "${diff / 3600_000}h ago"
         diff < 604800_000 -> "${diff / 86400_000}d ago"
         else -> {
-            val sdf = SimpleDateFormat("MMM dd", Locale.getDefault())
+            val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
             sdf.format(Date(timestamp))
         }
     }
