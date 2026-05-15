@@ -1,7 +1,17 @@
 package com.aura.todonotes.ui.screens.search
 
-.com androidxationValuespose.layoutMaxSize
-import androidx.compose
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,11 +20,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,21 +45,65 @@ fun SearchScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-                title = { SearchBar(query = uiState.query, onQueryChange = { viewModel.updateQuery(it) }, onClearQuery = { viewModel.clearQuery() }, placeholder = "Search notes...", modifier = Modifier.fillMaxWidth()) }
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                title = {
+                    SearchBar(
+                        query = uiState.query,
+                        onQueryChange = { viewModel.updateQuery(it) },
+                        onClearQuery = { viewModel.clearQuery() },
+                        placeholder = "Search notes...",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             )
         }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             when {
-                uiState.isSearching -> Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) { AuraLoadingIndicator() }
-                uiState.results.isEmpty() && uiState.hasSearched -> EmptyState(icon = Icons.Default.Search, title = "No Results", description = "No notes found for \"${uiState.query}\"")
-                uiState.results.isEmpty() -> EmptyState(icon = Icons.Default.Search, title = "Search Notes", description = "Type to search your notes")
+                uiState.isSearching -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AuraLoadingIndicator()
+                    }
+                }
+                uiState.results.isEmpty() && uiState.hasSearched -> {
+                    EmptyState(
+                        icon = Icons.Default.Search,
+                        title = "No Results",
+                        description = "No notes found for \"${uiState.query}\""
+                    )
+                }
+                uiState.results.isEmpty() -> {
+                    EmptyState(
+                        icon = Icons.Default.Search,
+                        title = "Search Notes",
+                        description = "Type to search your notes"
+                    )
+                }
                 else -> {
-                    AnimatedVisibility(visible = true, enter = fadeIn(animationSpec = tween(300)) + slideInVertically(animationSpec = tween(300))) {
-                        LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(animationSpec = tween(300))
+                    ) {
+                        LazyColumn(
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             items(uiState.results, key = { it.id }) { note ->
-                                NoteCard(note = note, onClick = { onNavigateToDetail(note.id) })
+                                NoteCard(
+                                    note = note,
+                                    onClick = { onNavigateToDetail(note.id) }
+                                )
                             }
                         }
                     }

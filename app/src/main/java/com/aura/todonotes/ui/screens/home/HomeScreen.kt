@@ -5,7 +5,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,7 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -42,8 +40,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -65,13 +61,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aura.todonotes.domain.model.Note
 import com.aura.todonotes.domain.model.SortOrder
 import com.aura.todonotes.domain.model.ViewMode
+import com.aura.todonotes.ui.components.AuraLoadingIndicator
 import com.aura.todonotes.ui.components.ConfirmDialog
 import com.aura.todonotes.ui.components.EmptyState
 import com.aura.todonotes.ui.components.NoteCard
@@ -90,15 +88,6 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showSortMenu by remember { mutableStateOf(false) }
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
-
-    val fabRotation by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "fab_rotation"
-    )
 
     Scaffold(
         topBar = {
@@ -130,22 +119,12 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = onNavigateToSearch
-                    ) {
-                        Icon(
-                            Icons.Default.Search,
-                            "Search",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    IconButton(onClick = onNavigateToSearch) {
+                        Icon(Icons.Default.Search, "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
-                            Icon(
-                                Icons.Default.Sort,
-                                "Sort",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Icon(Icons.Default.Sort, "Sort", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         DropdownMenu(
                             expanded = showSortMenu,
@@ -168,35 +147,23 @@ fun HomeScreen(
                                     onClick = {
                                         viewModel.updateSortOrder(sort)
                                         showSortMenu = false
-                                    },
-                                    trailingIcon = if (uiState.sortOrder == sort) {
-                                        { Icon(Icons.Default.Menu, null, tint = MaterialTheme.colorScheme.primary) }
-                                    } else null
+                                    }
                                 )
                             }
                         }
                     }
-                    IconButton(
-                        onClick = { viewModel.toggleViewMode() }
-                    ) {
+                    IconButton(onClick = { viewModel.toggleViewMode() }) {
                         Icon(
-                            imageVector = if (uiState.viewMode == ViewMode.LIST)
-                                Icons.Default.ViewAgenda else Icons.Default.GridView,
+                            imageVector = if (uiState.viewMode == ViewMode.LIST) Icons.Default.ViewAgenda else Icons.Default.GridView,
                             contentDescription = "Toggle View",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            Icons.Default.Settings,
-                            "Settings",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Icon(Icons.Default.Settings, "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
         bottomBar = {
@@ -210,29 +177,17 @@ fun HomeScreen(
                         .padding(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    BottomBarButton(
-                        icon = Icons.Default.Delete,
-                        label = "Trash",
-                        onClick = onNavigateToTrash
-                    )
-                    BottomBarButton(
-                        icon = Icons.Default.Archive,
-                        label = "Archive",
-                        onClick = onNavigateToArchive
-                    )
+                    BottomBarButton(icon = Icons.Default.Delete, label = "Trash", onClick = onNavigateToTrash)
+                    BottomBarButton(icon = Icons.Default.Archive, label = "Archive", onClick = onNavigateToArchive)
                 }
             }
         },
         floatingActionButton = {
-            val interactionSource = remember { MutableInteractionSource() }
-            val isPressed by interactionSource.collectIsPressedAsState()
-
+            val fabInteraction = remember { MutableInteractionSource() }
+            val fabPressed by fabInteraction.collectIsPressedAsState()
             val fabScale by animateFloatAsState(
-                targetValue = if (isPressed) 0.9f else 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                ),
+                targetValue = if (fabPressed) 0.9f else 1f,
+                animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
                 label = "fab_scale"
             )
 
@@ -242,12 +197,7 @@ fun HomeScreen(
                 modifier = Modifier.scale(fabScale),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    "Add Note",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.scale(fabRotation)
-                )
+                Icon(Icons.Default.Add, "Add Note", tint = MaterialTheme.colorScheme.onPrimary)
             }
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -259,7 +209,7 @@ fun HomeScreen(
         ) {
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    com.aira.todonotes.ui.components.AuraLoadingIndicator()
+                    AuraLoadingIndicator()
                 }
             } else if (uiState.notes.isEmpty()) {
                 EmptyState(
@@ -268,7 +218,6 @@ fun HomeScreen(
                     description = "Tap the + button to create your first note"
                 )
             } else {
-                // Pinned Section
                 val pinnedNotes = uiState.notes.filter { it.isPinned }
                 val unpinnedNotes = uiState.notes.filter { !it.isPinned }
 
@@ -278,45 +227,35 @@ fun HomeScreen(
                 ) {
                     if (pinnedNotes.isNotEmpty()) {
                         item {
-                            SectionHeader(
-                                title = "Pinned",
-                                count = pinnedNotes.size,
-                                icon = Icons.Default.Menu
-                            )
+                            SectionHeader(title = "Pinned", count = pinnedNotes.size)
                         }
+                        items(pinnedNotes, key = { it.id }) { note ->
+                            NoteCard(note = note, onClick = { onNavigateToDetail(note.id) })
+                        }
+                    }
 
-                        if (uiState.viewMode == ViewMode.LIST) {
-                            items(pinnedNotes, key = { it.id }) { note ->
+                    if (unpinnedNotes.isNotEmpty()) {
+                        item {
+                            SectionHeader(title = "All Notes", count = unpinnedNotes.size)
+                        }
+                        items(unpinnedNotes, key = { it.id }) { note ->
+                            val interaction = remember { MutableInteractionSource() }
+                            val pressed by interaction.collectIsPressedAsState()
+                            val scale by animateFloatAsState(
+                                if (pressed) 0.97f else 1f,
+                                spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
+                                label = "note_press"
+                            )
+                            Box(Modifier.scale(scale)) {
                                 NoteCard(
                                     note = note,
                                     onClick = { onNavigateToDetail(note.id) }
                                 )
                             }
                         }
-                        // Grid pinned not shown in grid mode for simplicity
-                    }
-
-                    if (unpinnedNotes.isNotEmpty()) {
-                        item {
-                            SectionHeader(
-                                title = "All Notes",
-                                count = unpinnedNotes.size
-                            )
-                        }
-                    }
-
-                    if (uiState.viewMode == ViewMode.LIST) {
-                        items(unpinnedNotes, key = { it.id }) { note ->
-                            AnimatedNoteItem(
-                                note = note,
-                                onClick = { onNavigateToDetail(note.id) },
-                                onLongClick = { noteToDelete = note }
-                            )
-                        }
                     }
                 }
 
-                // Grid View
                 if (uiState.viewMode == ViewMode.GRID && unpinnedNotes.isNotEmpty()) {
                     AnimatedVisibility(
                         visible = true,
@@ -329,10 +268,7 @@ fun HomeScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(unpinnedNotes, key = { it.id }) { note ->
-                                NoteCard(
-                                    note = note,
-                                    onClick = { onNavigateToDetail(note.id) }
-                                )
+                                NoteCard(note = note, onClick = { onNavigateToDetail(note.id) })
                             }
                         }
                     }
@@ -357,28 +293,15 @@ fun HomeScreen(
 }
 
 @Composable
-private fun SectionHeader(
-    title: String,
-    count: Int,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null
-) {
+private fun SectionHeader(title: String, count: Int) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-        }
         Text(
-            text = title.toUpperCase(),
+            text = title.uppercase(),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -394,72 +317,24 @@ private fun SectionHeader(
 }
 
 @Composable
-private fun AnimatedNoteItem(
-    note: Note,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
+private fun BottomBarButton(icon: ImageVector, label: String, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "note_item_press"
-    )
-
-    Box(modifier = Modifier.scale(scale)) {
-        NoteCard(
-            note = note,
-            onClick = onClick
-        )
-    }
-}
-
-@Composable
-private fun BottomBarButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "bottom_bar_${label}"
+        if (pressed) 0.9f else 1f,
+        spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium),
+        label = "bb_$label"
     )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(8.dp)
     ) {
-        Icon(
-            icon,
-            contentDescription = label,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium
-        )
+        Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.height(2.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
     }
 }
